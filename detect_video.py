@@ -3,7 +3,7 @@ from absl import app, flags, logging
 from absl.flags import FLAGS
 import cv2
 import tensorflow as tf
-from bopflow.models.yolonet import yolo_v3, yolo_v3_tiny
+from bopflow.models.yolonet import yolo_v3
 from yolov3_tf2.dataset import transform_images
 from yolov3_tf2.utils import draw_outputs
 
@@ -25,10 +25,7 @@ def main(_argv):
     if len(physical_devices) > 0:
         tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-    if FLAGS.tiny:
-        yolo = yolo_v3_tinyclasses=FLAGS.num_classes)
-    else:
-        yolo = yolo_v3classes=FLAGS.num_classes)
+    yolo = yolo_v3(classes=FLAGS.num_classes, use_tiny=FLAGS.tiny)
 
     yolo.load_weights(FLAGS.weights)
     logging.info('weights loaded')

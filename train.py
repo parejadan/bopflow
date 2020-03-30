@@ -10,15 +10,7 @@ from tensorflow.keras.callbacks import (
     ModelCheckpoint,
     TensorBoard
 )
-from bopflow.models.yolonet import (
-    yolo_v3,
-    yolo_v3_tiny,
-    yolo_loss,
-    yolo_anchors,
-    yolo_anchor_masks,
-    yolo_tiny_anchors,
-    yolo_tiny_anchor_masks
-)
+from bopflow.models.yolonet import yolo_v3, yolo_loss
 from yolov3_tf2.utils import freeze_all
 import yolov3_tf2.dataset as dataset
 
@@ -53,15 +45,10 @@ def main(_argv):
     if len(physical_devices) > 0:
         tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-    if FLAGS.tiny:
-        model = yolo_v3_tinyFLAGS.size, training=True,
-                           classes=FLAGS.num_classes)
-        anchors = yolo_tiny_anchors
-        anchor_masks = yolo_tiny_anchor_masks
-    else:
-        model = yolo_v3FLAGS.size, training=True, classes=FLAGS.num_classes)
-        anchors = yolo_anchors
-        anchor_masks = yolo_anchor_masks
+    network = yolo_v3(size=FLAGS.size, training=True, classes=FLAGS.num_classes, use_tiny=FLAGS.tiny, just_model=False)
+    anchors = network.anchros
+    anchor_masks = network.masks
+    model = network.get_model()
 
     train_dataset = dataset.load_fake_dataset()
     if FLAGS.dataset:
@@ -92,12 +79,11 @@ def main(_argv):
         # with incompatible number of classes
 
         # reset top layers
-        if FLAGS.tiny:
-            model_pretrained = yolo_v3_tiny
-                FLAGS.size, training=True, classes=FLAGS.weights_num_classes or FLAGS.num_classes)
-        else:
-            model_pretrained = yolo_v3
-                FLAGS.size, training=True, classes=FLAGS.weights_num_classes or FLAGS.num_classes)
+        network = yolo_v3(
+            size=FLAGS.size,
+            training=True,
+            classes=FLAGS.weights_num_classes or FLAGS.num_classes,
+            use_tiny=FLAGS.tiny)
         model_pretrained.load_weights(FLAGS.weights)
 
         if FLAGS.transfer == 'darknet':

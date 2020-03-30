@@ -22,11 +22,6 @@ yolo_anchors = np.array([(10, 13), (16, 30), (33, 23), (30, 61), (62, 45),
                         np.float32) / 416
 yolo_anchor_masks = np.array([[6, 7, 8], [3, 4, 5], [0, 1, 2]])
 
-yolo_tiny_anchors = np.array([(10, 14), (23, 27), (37, 58),
-                              (81, 82), (135, 169),  (344, 319)],
-                             np.float32) / 416
-yolo_tiny_anchor_masks = np.array([[3, 4, 5], [0, 1, 2]])
-
 
 def yolo_conv(filters: int, name=None):
     def _yolo_conv(x_in):
@@ -137,73 +132,6 @@ def yolo_nms(outputs, anchors, masks, classes):
     return boxes, scores, classes, valid_detections
 
 
-def yolo_v3(
-    size=None,
-    channels=3,
-    anchors=yolo_anchors,
-    masks=yolo_anchor_masks,
-    classes=80,
-    training=False
-):
-    x = inputs = Input([size, size, channels], name="input")
-
-    x_36, x_61, x = darknet(name="yolo_darknet")(x)
-
-    x = yolo_conv(512, name="yolo_conv_0")(x)
-    output_0 = yolo_output(512, len(masks[0]), classes, name="yolo_output_0")(x)
-
-    x = yolo_conv(256, name="yolo_conv_1")((x, x_61))
-    output_1 = yolo_output(256, len(masks[1]), classes, name="yolo_output_1")(x)
-
-    x = yolo_conv(128, name="yolo_conv_2")((x, x_36))
-    output_2 = yolo_output(128, len(masks[2]), classes, name="yolo_output_2")(x)
-
-    if training:
-        return Model(inputs, (output_0, output_1, output_2), name="yolov3")
-
-    boxes_0 = Lambda(lambda x: yolo_boxes(x, anchors[masks[0]], classes),
-                     name="yolo_boxes_0")(output_0)
-    boxes_1 = Lambda(lambda x: yolo_boxes(x, anchors[masks[1]], classes),
-                     name="yolo_boxes_1")(output_1)
-    boxes_2 = Lambda(lambda x: yolo_boxes(x, anchors[masks[2]], classes),
-                     name="yolo_boxes_2")(output_2)
-
-    outputs = Lambda(lambda x: yolo_nms(x, anchors, masks, classes),
-                     name="yolo_nms")((boxes_0[:3], boxes_1[:3], boxes_2[:3]))
-
-    return Model(inputs, outputs, name="yolov3")
-
-
-def yolo_v3_tiny(
-    size=None,
-    channels=3,
-    anchors=yolo_tiny_anchors,
-    masks=yolo_tiny_anchor_masks,
-    classes=80,
-    training=False
-):
-    x = inputs = Input([size, size, channels], name="input")
-
-    x_8, x = darknet_tiny(name="yolo_darknet")(x)
-
-    x = yolo_conv_tiny(256, name="yolo_conv_0")(x)
-    output_0 = yolo_output(256, len(masks[0]), classes, name="yolo_output_0")(x)
-
-    x = yolo_conv_tiny(128, name="yolo_conv_1")((x, x_8))
-    output_1 = yolo_output(128, len(masks[1]), classes, name="yolo_output_1")(x)
-
-    if training:
-        return Model(inputs, (output_0, output_1), name="yolov3")
-
-    boxes_0 = Lambda(lambda x: yolo_boxes(x, anchors[masks[0]], classes),
-                     name="yolo_boxes_0")(output_0)
-    boxes_1 = Lambda(lambda x: yolo_boxes(x, anchors[masks[1]], classes),
-                     name="yolo_boxes_1")(output_1)
-    outputs = Lambda(lambda x: yolo_nms(x, anchors, masks, classes),
-                     name="yolo_nms")((boxes_0[:3], boxes_1[:3]))
-    return Model(inputs, outputs, name="yolov3_tiny")
-
-
 def yolo_loss(anchors, classes=80, ignore_thresh=0.5):
     def _yolo_loss(y_true, y_pred):
         # 1. transform all pred outputs
@@ -264,3 +192,162 @@ def yolo_loss(anchors, classes=80, ignore_thresh=0.5):
         return xy_loss + wh_loss + obj_loss + class_loss
 
     return _yolo_loss
+
+
+class BaseV3Net:
+    def __init__(
+        self,
+        channels: int,
+        classes: int,
+        size=None,
+        training=False,
+    ):
+        self.channels = channels if channels else 3
+        self.classes = classes if classes else 80
+        self.size = size
+        self.training = training
+        self.model = None
+
+    def get_input(self):
+        return Input([self.size, self.size, self.channels], name="input")
+
+    def get_conv(self, x: tf.Tensor, x_prev: tf.Tensor, filters: int, mask_index: int):
+        x_ins = (x, x_prev) if isinstance(x_prev, tf.Tensor) else x
+        x = self._conv_creator(filters=filters, name=f"yolo_conv_{mask_index}")(x_ins)
+        output_layer = yolo_output(
+            filters=filters,
+            anchors=len(self.masks[mask_index]),
+            classes=self.classes,
+            name=f"yolo_output_{mask_index}"
+            )(x)
+
+        return x, output_layer
+
+    def get_lambda_boxes(self, output_layer, mask_index: int):
+        anchors = self.anchors[self.masks[mask_index]]
+        lambda_instance = Lambda(
+            lambda x: yolo_boxes(pred=x, anchors=anchors, classes=self.classes),
+            name=f"yolo_boxes_{mask_index}"
+        )
+
+        return lambda_instance(output_layer)
+
+    def get_output(self, boxes: tuple):
+        lambda_instance = Lambda(
+            lambda x: yolo_nms(x, self.anchors, self.masks, self.classes),
+            name="yolo_nms"
+        )
+
+        return lambda_instance(boxes)
+
+
+class YOLOTinyNetwork(BaseV3Net):
+    def __init__(
+        self,
+        channels: int,
+        anchors: np.array,
+        masks: np.array,
+        classes: int,
+        size=None,
+        training=False,
+    ):
+        super().__init__(size=size, channels=channels, classes=classes, training=training)
+        if not anchors:
+            self.anchors = np.array([(10, 14), (23, 27), (37, 58),
+                                (81, 82), (135, 169),  (344, 319)],
+                                np.float32) / 416
+        else:
+            self.anchors = anchors
+        if not masks:
+            self.masks = np.array([[3, 4, 5], [0, 1, 2]])
+        else:
+            self.masks = masks
+        self._conv_creator = yolo_conv_tiny
+
+    def get_model(self):
+        x = inputs = self.get_input()
+
+        x_8, x = darknet_tiny(name="yolo_darknet")(x)
+
+        x, output_0 = self.get_conv(x=x, x_prev=None, filters=256, mask_index=0)
+
+        x, output_1 = self.get_conv(x=x, x_prev=x_8, filters=128, mask_index=0)
+
+        if self.training:
+            self.model = Model(inputs, (output_0, output_1), name="yolov3")
+        else:
+            boxes_0 = self.get_lambda_boxes(output_layer=output_0, mask_index=0)
+            boxes_1 = self.get_lambda_boxes(output_layer=output_1, mask_index=1)
+            outputs = self.get_output(boxes=(boxes_0[:3], boxes_1[:3]))
+            self.model = Model(inputs, outputs, name="yolov3_tiny")
+
+        return self.model
+
+
+class YOLONetwork(BaseV3Net):
+    def __init__(
+        self,
+        channels: int,
+        anchors: np.array,
+        masks: np.array,
+        classes: int,
+        size=None,
+        training=False,
+    ):
+        super().__init__(size=size, channels=channels, classes=classes, training=training)
+        if not anchors:
+            self.anchors = np.array([(10, 13), (16, 30), (33, 23), (30, 61), (62, 45),
+                         (59, 119), (116, 90), (156, 198), (373, 326)],
+                        np.float32) / 416
+        else:
+            self.anchors = anchors
+        if not masks:
+            self.masks = np.array([[6, 7, 8], [3, 4, 5], [0, 1, 2]])
+        else:
+            self.masks = masks
+        self._conv_creator = yolo_conv
+
+    def get_model(self):
+        x = inputs = self.get_input()
+
+        x_36, x_61, x = darknet(name="yolo_darknet")(x)
+
+        x, output_0 = self.get_conv(x=x, x_prev=None, filters=512, mask_index=0)
+        x, output_1 = self.get_conv(x=x, x_prev=x_61, filters=256, mask_index=1)
+        x, output_2 = self.get_conv(x=x, x_prev=x_36, filters=128, mask_index=2)
+
+        if self.training:
+            self.model = Model(inputs, (output_0, output_1, output_2), name="yolov3")
+        else:
+            boxes_0 = self.get_lambda_boxes(output_layer=output_0, mask_index=0)
+            boxes_1 = self.get_lambda_boxes(output_layer=output_1, mask_index=1)
+            boxes_2 = self.get_lambda_boxes(output_layer=output_2, mask_index=2)
+            outputs = self.get_output(boxes=(boxes_0[:3], boxes_1[:3], boxes_2[:3]))
+            self.model = Model(inputs, outputs, name="yolov3")
+
+        return self.model
+
+
+def yolo_v3(
+    size=None,
+    channels=3,
+    anchors=None,
+    masks=None,
+    classes=80,
+    training=False,
+    use_tiny=False,
+    just_model=True,
+):
+    yolo_network = YOLOTinyNetwork if use_tiny else YOLONetwork
+    network = yolo_network(
+        channels=channels,
+        anchors=anchors,
+        masks=masks,
+        classes=classes,
+        size=size,
+        training=training,
+    )
+    if just_model:
+        return network.get_model()
+    else:
+        return network

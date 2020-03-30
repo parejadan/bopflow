@@ -4,7 +4,6 @@ from absl.flags import FLAGS
 import cv2
 import numpy as np
 import tensorflow as tf
-from bopflow.models.yolonet import yolo_v3, yolo_v3_tiny
 from yolov3_tf2.dataset import load_tfrecord_dataset, transform_images
 from yolov3_tf2.utils import draw_outputs
 

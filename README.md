@@ -2,6 +2,11 @@
 
 Adapt the stable [yolov3_tf2](https://github.com/zzh8829/yolov3-tf2) into a manegable pip dependency
 
+## TestCommand
+```bash
+python detect.py --image "/Users/danielpareja/sandbox/bop-projects/boplabel/data/test/cars/2d66e1c7-cb78-498d-8f40-
+196a49d6f923.png"
+```
 
 ## TODO - core code
 
@@ -10,6 +15,7 @@ Adapt the stable [yolov3_tf2](https://github.com/zzh8829/yolov3-tf2) into a mane
    - [ ] dataset.py (parsing)
    - [ ] utils.py (subsections)
    - [x] batch_norm.py
+   - [ ] detect.py
 2. [ ] strip tutorial code into documented interfaces
 3. [ ] revamp docs
 4. [ ] setup code for creating as pip dependency
