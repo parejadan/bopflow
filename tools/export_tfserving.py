@@ -4,9 +4,7 @@ from absl.flags import FLAGS
 import cv2
 import numpy as np
 import tensorflow as tf
-from yolov3_tf2.models import (
-    YoloV3, YoloV3Tiny
-)
+from bopflow.models.yolonet import yolo_v3, yolo_v3_tiny
 from yolov3_tf2.dataset import transform_images
 
 from tensorflow.python.eager import def_function
@@ -24,9 +22,9 @@ flags.DEFINE_integer('num_classes', 80, 'number of classes in the model')
 
 def main(_argv):
     if FLAGS.tiny:
-        yolo = YoloV3Tiny(classes=FLAGS.num_classes)
+        yolo = yolo_v3_tinyclasses=FLAGS.num_classes)
     else:
-        yolo = YoloV3(classes=FLAGS.num_classes)
+        yolo = yolo_v3classes=FLAGS.num_classes)
 
     yolo.load_weights(FLAGS.weights)
     logging.info('weights loaded')

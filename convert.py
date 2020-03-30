@@ -1,7 +1,7 @@
 from absl import app, flags, logging
 from absl.flags import FLAGS
 import numpy as np
-from yolov3_tf2.models import YoloV3, YoloV3Tiny
+from bopflow.models.yolonet import yolo_v3, yolo_v3_tiny
 from yolov3_tf2.utils import load_darknet_weights
 
 flags.DEFINE_string('weights', './data/yolov3.weights', 'path to weights file')
@@ -12,9 +12,9 @@ flags.DEFINE_integer('num_classes', 80, 'number of classes in the model')
 
 def main(_argv):
     if FLAGS.tiny:
-        yolo = YoloV3Tiny(classes=FLAGS.num_classes)
+        yolo = yolo_v3_tinyclasses=FLAGS.num_classes)
     else:
-        yolo = YoloV3(classes=FLAGS.num_classes)
+        yolo = yolo_v3classes=FLAGS.num_classes)
     yolo.summary()
     logging.info('model created')
 
