@@ -6,6 +6,10 @@ Adapt the stable [yolov3_tf2](https://github.com/zzh8829/yolov3-tf2) into a mane
 ## TODO - core code
 
 1. [ ] refactor code to core modules
+   - [x] models.py
+   - [ ] dataset.py (parsing)
+   - [ ] utils.py (subsections)
+   - [x] batch_norm.py
 2. [ ] strip tutorial code into documented interfaces
 3. [ ] revamp docs
 4. [ ] setup code for creating as pip dependency
