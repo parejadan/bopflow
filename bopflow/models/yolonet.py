@@ -7,7 +7,7 @@ from tensorflow.keras.losses import binary_crossentropy, sparse_categorical_cros
 from bopflow.models.darknet import (darknet_conv_upsampling, darknet_conv,
                                     darknet, darknet_tiny)
 from bopflow.models.utils import broadcast_iou
-from bopflow.const import YOLO_MAX_BOXES, YOLO_IOU_THRESHOLD, YOLO_SCORE_THRESHOLD
+from bopflow.const import YOLO_MAX_BOXES, YOLO_IOU_THRESHOLD, YOLO_SCORE_THRESHOLD, DEFAULT_IMAGE_SIZE
 
 
 def yolo_conv(filters: int, name=None):
@@ -248,7 +248,7 @@ class YOLOTinyNetwork(BaseV3Net):
         if not anchors:
             self.anchors = np.array([(10, 14), (23, 27), (37, 58),
                                 (81, 82), (135, 169),  (344, 319)],
-                                np.float32) / 416
+                                np.float32) / DEFAULT_IMAGE_SIZE
         else:
             self.anchors = anchors
         if not masks:
@@ -292,7 +292,7 @@ class YOLONetwork(BaseV3Net):
         if not anchors:
             self.anchors = np.array([(10, 13), (16, 30), (33, 23), (30, 61), (62, 45),
                          (59, 119), (116, 90), (156, 198), (373, 326)],
-                        np.float32) / 416
+                        np.float32) / DEFAULT_IMAGE_SIZE
         else:
             self.anchors = anchors
         if not masks:

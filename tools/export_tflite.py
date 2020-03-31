@@ -6,6 +6,7 @@ import numpy as np
 import tensorflow as tf
 from bopflow.models.yolonet import yolo_v3
 from bopflow.transofrm import transform_images
+from bopflow.const import DEFAULT_IMAGE_SIZE
 
 from tensorflow.python.eager import def_function
 from tensorflow.python.framework import tensor_spec
@@ -45,7 +46,7 @@ def main(_argv):
 
     img = tf.image.decode_image(open(FLAGS.image, 'rb').read(), channels=3)
     img = tf.expand_dims(img, 0)
-    img = transform_images(img, 416)
+    img = transform_images(img, DEFAULT_IMAGE_SIZE)
 
     t1 = time.time()
     outputs = interpreter.set_tensor(input_details[0]['index'], img)

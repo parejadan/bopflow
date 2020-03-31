@@ -5,9 +5,9 @@ import cv2
 import numpy as np
 import tensorflow as tf
 from bopflow.detect import coco_yolo_detector
-from bopflow.transform import transform_images, load_tfrecord_dataset
-from bopflow.const import DEFAULT_IMAGE_SIZE
-from bopflow.iomanage import draw_outputs
+from bopflow.transform import transform_images
+from bopflow.const import DEFAULT_IMAGE_SIZE, COCO_DEFAULT_CLASSES
+from bopflow.iomanage import draw_outputs, load_random_tfrecord_dataset, load_image_file
 
 flags.DEFINE_string('classes', './data/coco.names', 'path to classes file')
 flags.DEFINE_string('weights', './checkpoints/yolov3.tf',
@@ -21,24 +21,15 @@ flags.DEFINE_integer('num_classes', 80, 'number of classes in the model')
 
 
 def main(_argv):
-    physical_devices = tf.config.experimental.list_physical_devices('GPU')
-    if len(physical_devices) > 0:
-        tf.config.experimental.set_memory_growth(physical_devices[0], True)
-
     yolo = coco_yolo_detector(use_tiny=FLAGS.tiny)
     logging.info('weights loaded')
 
-    class_names = [c.strip() for c in open(FLAGS.classes).readlines()]
     logging.info('classes loaded')
 
     if FLAGS.tfrecord:
-        dataset = load_tfrecord_dataset(
-            FLAGS.tfrecord, FLAGS.classes, DEFAULT_IMAGE_SIZE)
-        dataset = dataset.shuffle(512)
-        img_raw, _label = next(iter(dataset.take(1)))
+        img_raw, _ = load_random_tfrecord_dataset(FLAGS.tfrecord, FLAGS.classes)
     else:
-        img_raw = tf.image.decode_image(
-            open(FLAGS.image, 'rb').read(), channels=3)
+        img_raw = load_image_file(FLAGS.image)
 
     img = tf.expand_dims(img_raw, 0)
     img = transform_images(img, DEFAULT_IMAGE_SIZE)
@@ -50,12 +41,12 @@ def main(_argv):
 
     logging.info('detections:')
     for i in range(nums[0]):
-        logging.info('\t{}, {}, {}'.format(class_names[int(classes[0][i])],
+        logging.info('\t{}, {}, {}'.format(COCO_DEFAULT_CLASSES[int(classes[0][i])],
                                            np.array(scores[0][i]),
                                            np.array(boxes[0][i])))
 
     img = cv2.cvtColor(img_raw.numpy(), cv2.COLOR_RGB2BGR)
-    img = draw_outputs(img, (boxes, scores, classes, nums), class_names)
+    img = draw_outputs(img, (boxes, scores, classes, nums), COCO_DEFAULT_CLASSES)
     cv2.imwrite(FLAGS.output, img)
     logging.info('output saved to: {}'.format(FLAGS.output))
 

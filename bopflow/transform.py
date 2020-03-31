@@ -120,16 +120,6 @@ def parse_tfrecord(tfrecord, class_table, size):
     return x_train, y_train
 
 
-def load_tfrecord_dataset(file_pattern, class_file, size=416):
-    LINE_NUMBER = -1  # TODO: use tf.lookup.TextFileIndex.LINE_NUMBER
-    class_table = tf.lookup.StaticHashTable(tf.lookup.TextFileInitializer(
-        class_file, tf.string, 0, tf.int64, LINE_NUMBER, delimiter="\n"), -1)
-
-    files = tf.data.Dataset.list_files(file_pattern)
-    dataset = files.flat_map(tf.data.TFRecordDataset)
-    return dataset.map(lambda x: parse_tfrecord(x, class_table, size))
-
-
 def load_fake_dataset():
     x_train = tf.image.decode_jpeg(
         open("./data/girl.png", "rb").read(), channels=3)

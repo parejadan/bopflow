@@ -3,6 +3,8 @@ import numpy as np
 import tensorflow as tf
 import cv2
 
+from bopflow.const import DEFAULT_IMAGE_SIZE
+
 
 YOLOV3_LAYER_LIST = [
     "yolo_darknet",
@@ -90,23 +92,30 @@ def draw_outputs(img, outputs, class_names):
     return img
 
 
-def draw_labels(x, y, class_names):
-    img = x.numpy()
-    boxes, classes = tf.split(y, (4, 1), axis=-1)
-    classes = classes[..., 0]
-    wh = np.flip(img.shape[0:2])
-    for i in range(len(boxes)):
-        x1y1 = tuple((np.array(boxes[i][0:2]) * wh).astype(np.int32))
-        x2y2 = tuple((np.array(boxes[i][2:4]) * wh).astype(np.int32))
-        img = cv2.rectangle(img, x1y1, x2y2, (255, 0, 0), 2)
-        img = cv2.putText(img, class_names[classes[i]],
-                          x1y1, cv2.FONT_HERSHEY_COMPLEX_SMALL,
-                          1, (0, 0, 255), 2)
-    return img
-
-
 def freeze_all(model, frozen=True):
     model.trainable = not frozen
     if isinstance(model, tf.keras.Model):
         for l in model.layers:
             freeze_all(l, frozen)
+
+
+def load_tfrecord_dataset(file_pattern, class_file: str, size=DEFAULT_IMAGE_SIZE):
+    LINE_NUMBER = -1
+    class_table = tf.lookup.StaticHashTable(tf.lookup.TextFileInitializer(
+        class_file, tf.string, 0, tf.int64, LINE_NUMBER, delimiter="\n"), -1)
+
+    files = tf.data.Dataset.list_files(file_pattern)
+    dataset = files.flat_map(tf.data.TFRecordDataset)
+    return dataset.map(lambda x: parse_tfrecord(x, class_table, size))
+
+
+def load_random_tfrecord_dataset(file_pattern, class_file):
+    dataset = load_tfrecord_dataset(file_pattern=file_pattern, class_file=class_file)
+    dataset = dataset.shuffle(512)
+    img_raw, label = next(iter(dataset.take(1)))
+
+    return img_raw, label
+
+
+def load_image_file(image_filepath):
+    return tf.image.decode_image(open(image_filepath, "rb").read(), channels=3)

@@ -3,7 +3,7 @@ from absl import app, flags, logging
 from absl.flags import FLAGS
 import cv2
 import tensorflow as tf
-from bopflow.models.yolonet import yolo_v3
+from bopflow.models.yolonet import coco_yolo_detector
 from bopflow.transform import transform_images
 from bopflow.iomanage import draw_outputs
 
@@ -25,7 +25,7 @@ def main(_argv):
     if len(physical_devices) > 0:
         tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-    yolo = yolo_v3(classes=FLAGS.num_classes, use_tiny=FLAGS.tiny)
+    yolo = coco_yolo_detector(use_tiny=FLAGS.tiny)
 
     yolo.load_weights(FLAGS.weights)
     logging.info('weights loaded')
