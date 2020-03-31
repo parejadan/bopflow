@@ -12,7 +12,8 @@ from tensorflow.keras.callbacks import (
 )
 from bopflow.models.yolonet import yolo_v3, yolo_loss
 from yolov3_tf2.utils import freeze_all
-import yolov3_tf2.dataset as dataset
+from bopflow.transform import dataset
+
 
 flags.DEFINE_string('dataset', '', 'path to dataset')
 flags.DEFINE_string('val_dataset', '', 'path to validation dataset')

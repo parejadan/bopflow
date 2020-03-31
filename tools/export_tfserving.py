@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import tensorflow as tf
 from bopflow.models.yolonet import yolo_v3
-from yolov3_tf2.dataset import transform_images
+from bopflow.transform import transform_images
 
 from tensorflow.python.eager import def_function
 from tensorflow.python.framework import tensor_spec

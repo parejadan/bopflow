@@ -4,8 +4,8 @@ from absl.flags import FLAGS
 import cv2
 import numpy as np
 import tensorflow as tf
-from bopflow.models.yolonet import yolo_v3
-from yolov3_tf2.dataset import transform_images, load_tfrecord_dataset
+from bopflow.detect import default_detector
+from bopflow.transform import transform_images, load_tfrecord_dataset
 from yolov3_tf2.utils import draw_outputs
 
 flags.DEFINE_string('classes', './data/coco.names', 'path to classes file')
@@ -24,9 +24,7 @@ def main(_argv):
     if len(physical_devices) > 0:
         tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-    yolo = yolo_v3(classes=FLAGS.num_classes, use_tiny=FLAGS.tiny)
-
-    yolo.load_weights(FLAGS.weights).expect_partial()
+    yolo = default_detector(weights_path=FLAGS.weights, class_count=FLAGS.num_classes, use_tiny=FLAGS.tiny)
     logging.info('weights loaded')
 
     class_names = [c.strip() for c in open(FLAGS.classes).readlines()]
@@ -45,7 +43,7 @@ def main(_argv):
     img = transform_images(img, FLAGS.size)
 
     t1 = time.time()
-    boxes, scores, classes, nums = yolo(img)
+    boxes, scores, classes, nums = yolo.evaluate(img)
     t2 = time.time()
     logging.info('time: {}'.format(t2 - t1))
 

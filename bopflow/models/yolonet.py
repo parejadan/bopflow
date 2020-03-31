@@ -1,5 +1,3 @@
-from absl import flags
-from absl.flags import FLAGS
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Model
@@ -9,18 +7,7 @@ from tensorflow.keras.losses import binary_crossentropy, sparse_categorical_cros
 from bopflow.models.darknet import (darknet_conv_upsampling, darknet_conv,
                                     darknet, darknet_tiny)
 from bopflow.models.utils import broadcast_iou
-
-
-flags.DEFINE_integer('yolo_max_boxes', 100,
-                     'maximum number of boxes per image')
-flags.DEFINE_float('yolo_iou_threshold', 0.5, 'iou threshold')
-flags.DEFINE_float('yolo_score_threshold', 0.5, 'score threshold')
-
-
-yolo_anchors = np.array([(10, 13), (16, 30), (33, 23), (30, 61), (62, 45),
-                         (59, 119), (116, 90), (156, 198), (373, 326)],
-                        np.float32) / 416
-yolo_anchor_masks = np.array([[6, 7, 8], [3, 4, 5], [0, 1, 2]])
+from bopflow.const import YOLO_MAX_BOXES, YOLO_IOU_THRESHOLD, YOLO_SCORE_THRESHOLD
 
 
 def yolo_conv(filters: int, name=None):
@@ -123,10 +110,10 @@ def yolo_nms(outputs, anchors, masks, classes):
         scores=tf.reshape(
             scores,
             (tf.shape(scores)[0], -1, tf.shape(scores)[-1])),
-        max_output_size_per_class=FLAGS.yolo_max_boxes,
-        max_total_size=FLAGS.yolo_max_boxes,
-        iou_threshold=FLAGS.yolo_iou_threshold,
-        score_threshold=FLAGS.yolo_score_threshold
+        max_output_size_per_class=YOLO_MAX_BOXES,
+        max_total_size=YOLO_MAX_BOXES,
+        iou_threshold=YOLO_IOU_THRESHOLD,
+        score_threshold=YOLO_SCORE_THRESHOLD
     )
 
     return boxes, scores, classes, valid_detections
@@ -240,6 +227,12 @@ class BaseV3Net:
 
         return lambda_instance(boxes)
 
+    def load_weights(self, weights_path):
+        return self.model.load_weights(weights_path)
+
+    def evaluate(self, image):
+        return self.model(image)
+
 
 class YOLOTinyNetwork(BaseV3Net):
     def __init__(
@@ -263,8 +256,9 @@ class YOLOTinyNetwork(BaseV3Net):
         else:
             self.masks = masks
         self._conv_creator = yolo_conv_tiny
+        self.set_model()
 
-    def get_model(self):
+    def set_model(self):
         x = inputs = self.get_input()
 
         x_8, x = darknet_tiny(name="yolo_darknet")(x)
@@ -306,8 +300,9 @@ class YOLONetwork(BaseV3Net):
         else:
             self.masks = masks
         self._conv_creator = yolo_conv
+        self.set_model()
 
-    def get_model(self):
+    def set_model(self):
         x = inputs = self.get_input()
 
         x_36, x_61, x = darknet(name="yolo_darknet")(x)
@@ -348,6 +343,6 @@ def yolo_v3(
         training=training,
     )
     if just_model:
-        return network.get_model()
+        return network.model
     else:
         return network
