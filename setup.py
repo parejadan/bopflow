@@ -1,8 +1,7 @@
-from setuptools import setup
+import setuptools
 
-setup(name='bopflow',
-      version='0.1',
-      url='https://github.com/zzh8829/yolov3-tf2',
-      author='Zihao Zhang',
-      author_email='zzh8829@gmail.com',
-      packages=['bopflow'])
+
+with open('requirements.txt') as f:
+    requirements = f.read().splitlines()
+
+setuptools.setup(install_requires=requirements)

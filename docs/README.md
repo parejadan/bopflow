@@ -156,8 +156,8 @@ Numbers are obtained with rough calculations from `detect_video.py`
 
 | Detection   | 416x416 |
 |-------------|---------|
-| YoloV3 predict_on_batch     | 29-32ms    | 
-| YoloV3 predict_on_batch + TensorRT     | 22-28ms    | 
+| YoloV3 predict_on_batch     | 29-32ms    |
+| YoloV3 predict_on_batch + TensorRT     | 22-28ms    |
 
 
 Darknet version of YoloV3 at 416x416 takes 29ms on Titan X.
@@ -199,15 +199,6 @@ performance when you enable it in production. Important note, you should not
 pass any non-tensor parameter to @tf.function, it will cause re-compilation
 on every call. I am not sure whats the best way other than using globals.
 
-### absl.py (abseil)
-
-Absolutely amazing. If you don't know already, absl.py is officially used by
-internal projects at Google. It standardizes application interface for Python
-and many other languages. After using it within Google, I was so excited
-to hear abseil going open source. It includes many decades of best practices
-learned from creating large size scalable applications. I literally have
-nothing bad to say about it, strongly recommend absl.py to everybody.
-
 ### Loading pre-trained Darknet weights
 
 very hard with pure functional API because the layer ordering is different in
@@ -242,14 +233,14 @@ according to your need by setting `--yolo_iou_threshold` and
 
 ### Maximum number of boxes
 
-By default there can be maximum 100 bounding boxes per image, 
+By default there can be maximum 100 bounding boxes per image,
 if for some reason you would like to have more boxes you can use the `--yolo_max_boxes` flag.
 
-### NAN Loss / Training Failed / Doesn't Converge 
+### NAN Loss / Training Failed / Doesn't Converge
 
 Many people including me have succeeded in training, so the code definitely works
 @LongxingTan in https://github.com/zzh8829/yolov3-tf2/issues/128 provided some of his insights summarized here:
-  
+
   1. For nan loss, try to make learning rate smaller
   2. Double check the format of your input data. Data input labelled by vott and labelImg is different. so make sure the input box is the right, and check carefully the format is `x1/width,y1/height,x2/width,y2/height` and **NOT** x1,y1,x2,y2, or x,y,w,h
 

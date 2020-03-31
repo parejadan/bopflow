@@ -1,4 +1,3 @@
-from absl import logging
 import numpy as np
 import tensorflow as tf
 import cv2
@@ -43,9 +42,6 @@ def load_darknet_weights(model, weights_file, tiny=False):
             if i + 1 < len(sub_model.layers) and \
                     sub_model.layers[i + 1].name.startswith("batch_norm"):
                 batch_norm = sub_model.layers[i + 1]
-
-            logging.info("{}/{} {}".format(
-                sub_model.name, layer.name, "bn" if batch_norm else "bias"))
 
             filters = layer.filters
             size = layer.kernel_size[0]

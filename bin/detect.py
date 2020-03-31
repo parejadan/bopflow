@@ -1,26 +1,21 @@
 import time
-from absl import app, flags, logging
-from absl.flags import FLAGS
 import cv2
 import numpy as np
 import tensorflow as tf
+import argparse
+
 from bopflow.detect import coco_yolo_detector
 from bopflow.transform import transform_images
 from bopflow.const import DEFAULT_IMAGE_SIZE, COCO_DEFAULT_CLASSES
 from bopflow.iomanage import draw_outputs, load_random_tfrecord_dataset, load_image_file
-
-flags.DEFINE_string("weights", "./checkpoints/yolov3.tf",
-                    "path to weights file")
-flags.DEFINE_boolean("tiny", False, "yolov3 or yolov3-tiny")
-flags.DEFINE_string("image", "./data/girl.png", "path to input image")
-flags.DEFINE_string("output", "./output.jpg", "path to output image")
+from bopflow import LOGGER
 
 
-def main(_argv):
-    yolo = coco_yolo_detector(use_tiny=FLAGS.tiny)
-    logging.info("weights loaded")
+def main(args):
+    yolo = coco_yolo_detector(weights_path=args.weights_path, use_tiny=args.tiny)
+    LOGGER.info("detector loaded")
 
-    img_raw = load_image_file(FLAGS.image)
+    img_raw = load_image_file(args.image)
 
     img = tf.expand_dims(img_raw, 0)
     img = transform_images(img, DEFAULT_IMAGE_SIZE)
@@ -28,20 +23,30 @@ def main(_argv):
     t1 = time.time()
     detections = yolo.evaluate(img)
     t2 = time.time()
-    logging.info("time: {}".format(t2 - t1))
+    LOGGER.info("time: {}".format(t2 - t1))
 
-    logging.info("detections:")
+    LOGGER.info("detections:")
     for detected_class in detections:
-        logging.info(detected_class)
+        LOGGER.info(detected_class)
 
     img = cv2.cvtColor(img_raw.numpy(), cv2.COLOR_RGB2BGR)
     img = draw_outputs(img, detections)
-    cv2.imwrite(FLAGS.output, img)
-    logging.info("output saved to: {}".format(FLAGS.output))
+    cv2.imwrite(args.output, img)
+    LOGGER.info("output saved to: {}".format(args.output))
 
 
 if __name__ == "__main__":
-    try:
-        app.run(main)
-    except SystemExit:
-        pass
+    parser = argparse.ArgumentParser(
+        description="Performce once off image detection using yolov3 default detector"
+    )
+    parser.add_argument("-image", dest="image",
+                        help="image file to perform detection on")
+    parser.add_argument("--tiny", action="store_true",
+                        help="pass if you want to perform detection with tiny network")
+    parser.add_argument("--weights-path", dest="weights_path", default="./checkpoints/yolov3.tf",
+                        help="path to network weights to use for detection")
+    parser.add_argument("--output", dest="output", default="output.jpg",
+                        help="filepath to output detection result")
+    args = parser.parse_args()
+
+    main(args)

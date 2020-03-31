@@ -13,9 +13,8 @@ def default_detector(weights_path: str, class_count: str, class_names=[], use_ti
     return detector
 
 
-def coco_yolo_detector(use_tiny=False):
+def coco_yolo_detector(weights_path: str, use_tiny=False):
     class_count = len(COCO_DEFAULT_CLASSES)
-    weights_path = "./checkpoints/yolov3.tf"
     return default_detector(
         weights_path=weights_path,
         class_count=class_count,

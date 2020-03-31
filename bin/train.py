@@ -1,44 +1,17 @@
-from absl import app, flags, logging
-from absl.flags import FLAGS
-
+import argparse
 import tensorflow as tf
 import numpy as np
-import cv2
 from tensorflow.keras.callbacks import (
     ReduceLROnPlateau,
     EarlyStopping,
     ModelCheckpoint,
     TensorBoard
 )
+
 from bopflow.models.yolonet import yolo_v3, yolo_loss
 from bopflow.iomanage import freeze_all, load_tfrecord_dataset
 from bopflow.transform import load_fake_dataset, transform_images, transform_targets
-
-
-flags.DEFINE_string('dataset', '', 'path to dataset')
-flags.DEFINE_string('val_dataset', '', 'path to validation dataset')
-flags.DEFINE_boolean('tiny', False, 'yolov3 or yolov3-tiny')
-flags.DEFINE_string('weights', './checkpoints/yolov3.tf',
-                    'path to weights file')
-flags.DEFINE_string('classes', './data/coco.names', 'path to classes file')
-flags.DEFINE_enum('mode', 'fit', ['fit', 'eager_fit', 'eager_tf'],
-                  'fit: model.fit, '
-                  'eager_fit: model.fit(run_eagerly=True), '
-                  'eager_tf: custom GradientTape')
-flags.DEFINE_enum('transfer', 'none',
-                  ['none', 'darknet', 'no_output', 'frozen', 'fine_tune'],
-                  'none: Training from scratch, '
-                  'darknet: Transfer darknet, '
-                  'no_output: Transfer all but output, '
-                  'frozen: Transfer and freeze all, '
-                  'fine_tune: Transfer all and freeze darknet only')
-flags.DEFINE_integer('size', 416, 'image size')
-flags.DEFINE_integer('epochs', 2, 'number of epochs')
-flags.DEFINE_integer('batch_size', 8, 'batch size')
-flags.DEFINE_float('learning_rate', 1e-3, 'learning rate')
-flags.DEFINE_integer('num_classes', 80, 'number of classes in the model')
-flags.DEFINE_integer('weights_num_classes', None, 'specify num class for `weights` file if different, '
-                     'useful in transfer learning with different number of classes')
+from bopflow import LOGGER
 
 
 def main(_argv):
@@ -134,7 +107,7 @@ def main(_argv):
                 optimizer.apply_gradients(
                     zip(grads, model.trainable_variables))
 
-                logging.info("{}_train_{}, {}, {}".format(
+                LOGGER.info("{}_train_{}, {}, {}".format(
                     epoch, batch, total_loss.numpy(),
                     list(map(lambda x: np.sum(x.numpy()), pred_loss))))
                 avg_loss.update_state(total_loss)
@@ -147,12 +120,12 @@ def main(_argv):
                     pred_loss.append(loss_fn(label, output))
                 total_loss = tf.reduce_sum(pred_loss) + regularization_loss
 
-                logging.info("{}_val_{}, {}, {}".format(
+                LOGGER.info("{}_val_{}, {}, {}".format(
                     epoch, batch, total_loss.numpy(),
                     list(map(lambda x: np.sum(x.numpy()), pred_loss))))
                 avg_val_loss.update_state(total_loss)
 
-            logging.info("{}, train: {}, val: {}".format(
+            LOGGER.info("{}, train: {}, val: {}".format(
                 epoch,
                 avg_loss.result().numpy(),
                 avg_val_loss.result().numpy()))
@@ -179,8 +152,29 @@ def main(_argv):
                             validation_data=val_dataset)
 
 
-if __name__ == '__main__':
-    try:
-        app.run(main)
-    except SystemExit:
-        pass
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="For fine tuning yolov3 object detection against new object classes"
+    )
+
+    parser.add_argument('--dataset', default='', help='path to dataset')
+    parser.add_argument('--val_dataset', default='', help='path to validation dataset')
+    parser.add_argument('--tiny', default=False, help='yolov3 or yolov3-tiny')
+    parser.add_argument('--weights', default='./checkpoints/yolov3.tf', help='path to weights file')
+    parser.add_argument('--classes', default='./data/coco.names', help='path to classes file')
+    parser.add_argument('--mode', default='fit', choices=['fit', 'eager_fit', 'eager_tf'], help=
+                    'fit: model.fit, '
+                    'eager_fit: model.fit(run_eagerly=True), '
+                    'eager_tf: custom GradientTape')
+    parser.add_argument('--transfer', default='none', choices=['none', 'darknet', 'no_output', 'frozen', 'fine_tune'], help=
+                    'none: Training from scratch, '
+                    'darknet: Transfer darknet, '
+                    'no_output: Transfer all but output, '
+                    'frozen: Transfer and freeze all, '
+                    'fine_tune: Transfer all and freeze darknet only')
+    parser.add_argument('--size', default=416, help='image size')
+    parser.add_argument('--epochs', default=2, help='number of epochs')
+    parser.add_argument('--batch_size', default=8, help='batch size')
+    parser.add_argument('--learning_rate', default=1e-3, help='learning rate')
+    parser.add_argument('--num_classes', default=80, help='number of classes in the model')
+    parser.add_argument('--weights_num_classes', default=None, help='specify num class for `weights` file if different, useful in transfer learning with different number of classes')
