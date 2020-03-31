@@ -25,13 +25,29 @@ docker run -v $(pwd):/code mercutiodesign/docker-black black .
    - [x] train.py -> bin/train.py
    - [x] data + checkpoint directory (output paths)
 2. [x] convert setup.py to pip dependency
-3. [ ] remove absl dependency
+3. [x] remove absl dependency
+4. [x] setup code for creating as pip dependency
+
+
+## TODO - scale up as service
+1. [ ] create django project that imports this code
+2. [ ] have project interact with S3 images
+3. [ ] s3 image key paths should exists on s3 per request
+4. [ ] downloads images form s3
+5. [ ] returns result stating confidence level, boxing area and detection class name
+6. [ ] deploy this shit to kuberneties cluster
+
+## TODO - captcha solver
+1. [ ] train detector on missing images from popular captcha puzzles
+2. [ ] train detector on cryptic images from captcha puzzle
+3. [ ] version weights and have code reference version
+
+## TODO - Nice to have
 4. [ ] strip tutorial code into documented interfaces
 5. [ ] revamp docs
-6. [ ] setup code for creating as pip dependency
-7. [ ] deploy code to private PYPI registry (AWS)
-8. [ ] add automated test coverage
-9. [ ] setup automatic deployment pipeline
+6. [ ] deploy code to private PYPI registry (AWS)
+7. [ ] add automated test coverage
+8. [ ] setup automatic deployment pipeline
 
 
 ## TODO - training
