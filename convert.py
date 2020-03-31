@@ -11,7 +11,7 @@ flags.DEFINE_integer('num_classes', 80, 'number of classes in the model')
 
 
 def main(_argv):
-    yolo = yolo_v3(classes=FLAGS.num_classes, use_tiny=True)
+    yolo = yolo_v3(num_classes=FLAGS.num_classes, use_tiny=True)
     yolo.summary()
     logging.info('model created')
 

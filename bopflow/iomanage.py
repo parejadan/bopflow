@@ -78,17 +78,28 @@ def load_darknet_weights(model, weights_file, tiny=False):
     wf.close()
 
 
-def draw_outputs(img, outputs, class_names):
-    boxes, objectness, classes, nums = outputs
-    boxes, objectness, classes, nums = boxes[0], objectness[0], classes[0], nums[0]
+def draw_outputs(img, detections):
     wh = np.flip(img.shape[0:2])
-    for i in range(nums):
-        x1y1 = tuple((np.array(boxes[i][0:2]) * wh).astype(np.int32))
-        x2y2 = tuple((np.array(boxes[i][2:4]) * wh).astype(np.int32))
+    for detected_class in detections:
+        bounding_box = detected_class["bounding_box"]
+        detection_confidence = detected_class["detection_confidence"]
+        class_name = detected_class["class_name"]
+
+        x1y1 = tuple((bounding_box[0:2] * wh).astype(np.int32))
+        x2y2 = tuple((bounding_box[2:4] * wh).astype(np.int32))
+
         img = cv2.rectangle(img, x1y1, x2y2, (255, 0, 0), 2)
-        img = cv2.putText(img, "{} {:.4f}".format(
-            class_names[int(classes[i])], objectness[i]),
-            x1y1, cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 255), 2)
+        img = cv2.putText(
+            img,
+             "{} {:.4f}".format(
+                 class_name,
+                 detection_confidence),
+            x1y1,
+            cv2.FONT_HERSHEY_COMPLEX_SMALL,
+            1,
+            (0, 0, 255),
+            2
+        )
     return img
 
 

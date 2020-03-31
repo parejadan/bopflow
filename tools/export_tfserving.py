@@ -22,7 +22,7 @@ flags.DEFINE_integer('num_classes', 80, 'number of classes in the model')
 
 
 def main(_argv):
-    yolo = yolo_v3(size=FLAGS.size, classes=FLAGS.num_classes, use_tiny=FLAGS.tiny)
+    yolo = yolo_v3(size=FLAGS.size, num_classes=FLAGS.num_classes, use_tiny=FLAGS.tiny)
 
     yolo.load_weights(FLAGS.weights)
     logging.info('weights loaded')

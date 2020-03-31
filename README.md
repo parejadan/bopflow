@@ -12,8 +12,8 @@ python detect.py --image "/Users/danielpareja/sandbox/bop-projects/boplabel/data
 
 1. [ ] refactor code to core modules
    - [x] models.py
-   - [ ] dataset.py (parsing)
-   - [ ] utils.py (subsections)
+   - [x] dataset.py (parsing)
+   - [x] utils.py (subsections)
    - [x] batch_norm.py
    - [ ] detect.py
 2. [ ] strip tutorial code into documented interfaces

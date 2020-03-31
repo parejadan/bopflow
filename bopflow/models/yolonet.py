@@ -49,15 +49,15 @@ def yolo_conv_tiny(filters: int, name=None):
     return _yolo_conv
 
 
-def yolo_output(filters: int, anchors, classes, name=None):
+def yolo_output(filters: int, anchors, num_classes, name=None):
     def _yolo_output(x_in):
         x = inputs = Input(x_in.shape[1:])
         x = darknet_conv(x=x, filters=filters * 2, size=3)
-        x = darknet_conv(x=x, filters=anchors * (classes + 5), size=1, batch_norm=False)
+        x = darknet_conv(x=x, filters=anchors * (num_classes + 5), size=1, batch_norm=False)
         x = Lambda(
             lambda x: tf.reshape(
                 x,
-                (-1, tf.shape(x)[1], tf.shape(x)[2], anchors, classes + 5)
+                (-1, tf.shape(x)[1], tf.shape(x)[2], anchors, num_classes + 5)
             )
         )(x)
 
@@ -66,11 +66,11 @@ def yolo_output(filters: int, anchors, classes, name=None):
     return _yolo_output
 
 
-def yolo_boxes(pred, anchors, classes):
-    # pred: (batch_size, grid, grid, anchors, (x, y, w, h, obj, ...classes))
+def yolo_boxes(pred, anchors, num_classes):
+    # pred: (batch_size, grid, grid, anchors, (x, y, w, h, obj, ...num_classes))
     grid_size = tf.shape(pred)[1]
     box_xy, box_wh, objectness, class_probs = tf.split(
-        pred, (2, 2, 1, classes), axis=-1)
+        pred, (2, 2, 1, num_classes), axis=-1)
 
     box_xy = tf.sigmoid(box_xy)
     objectness = tf.sigmoid(objectness)
@@ -92,7 +92,7 @@ def yolo_boxes(pred, anchors, classes):
     return bbox, objectness, class_probs, pred_box
 
 
-def yolo_nms(outputs, anchors, masks, classes):
+def yolo_nms(outputs, anchors, masks, num_classes):
     boxes, conf, types = [], [], []
 
     for o in outputs:
@@ -105,7 +105,7 @@ def yolo_nms(outputs, anchors, masks, classes):
     class_probs = tf.concat(types, axis=1)
 
     scores = confidence * class_probs
-    boxes, scores, classes, valid_detections = tf.image.combined_non_max_suppression(
+    boxes, scores, num_classes, valid_detections = tf.image.combined_non_max_suppression(
         boxes=tf.reshape(bbox, (tf.shape(bbox)[0], -1, 1, 4)),
         scores=tf.reshape(
             scores,
@@ -116,15 +116,15 @@ def yolo_nms(outputs, anchors, masks, classes):
         score_threshold=YOLO_SCORE_THRESHOLD
     )
 
-    return boxes, scores, classes, valid_detections
+    return boxes, scores, num_classes, valid_detections
 
 
-def yolo_loss(anchors, classes=80, ignore_thresh=0.5):
+def yolo_loss(anchors, num_classes=80, ignore_thresh=0.5):
     def _yolo_loss(y_true, y_pred):
         # 1. transform all pred outputs
         # y_pred: (batch_size, grid, grid, anchors, (x, y, w, h, obj, ...cls))
         pred_box, pred_obj, pred_class, pred_xywh = yolo_boxes(
-            y_pred, anchors, classes)
+            y_pred, anchors, num_classes)
         pred_xy = pred_xywh[..., 0:2]
         pred_wh = pred_xywh[..., 2:4]
 
@@ -185,12 +185,14 @@ class BaseV3Net:
     def __init__(
         self,
         channels: int,
-        classes: int,
+        num_classes: int,
+        class_names: [],
         size=None,
         training=False,
     ):
         self.channels = channels if channels else 3
-        self.classes = classes if classes else 80
+        self.num_classes = num_classes if num_classes else 80
+        self.class_names = class_names
         self.size = size
         self.training = training
         self.model = None
@@ -204,7 +206,7 @@ class BaseV3Net:
         output_layer = yolo_output(
             filters=filters,
             anchors=len(self.masks[mask_index]),
-            classes=self.classes,
+            num_classes=self.num_classes,
             name=f"yolo_output_{mask_index}"
             )(x)
 
@@ -213,7 +215,7 @@ class BaseV3Net:
     def get_lambda_boxes(self, output_layer, mask_index: int):
         anchors = self.anchors[self.masks[mask_index]]
         lambda_instance = Lambda(
-            lambda x: yolo_boxes(pred=x, anchors=anchors, classes=self.classes),
+            lambda x: yolo_boxes(pred=x, anchors=anchors, num_classes=self.num_classes),
             name=f"yolo_boxes_{mask_index}"
         )
 
@@ -221,7 +223,7 @@ class BaseV3Net:
 
     def get_output(self, boxes: tuple):
         lambda_instance = Lambda(
-            lambda x: yolo_nms(x, self.anchors, self.masks, self.classes),
+            lambda x: yolo_nms(x, self.anchors, self.masks, self.num_classes),
             name="yolo_nms"
         )
 
@@ -231,7 +233,34 @@ class BaseV3Net:
         return self.model.load_weights(weights_path)
 
     def evaluate(self, image):
-        return self.model(image)
+        """
+        Returns
+        -------
+        {
+            "class_id": int,  # class id that was associated to detection class
+            "bounding_box": np.array([  # normalized float coordinates indicating location in image where detected class is visible
+                np.float,
+                np.float,
+                np.float,
+                np.float]),
+            "detection_confidence": float,  # detection confidence score in (0.5, 1.0)
+        }
+        """
+        detections = []
+        boxes, scores, class_ids, detection_count = self.model(image)
+        boxes = boxes[0]
+        scores = scores[0]
+        class_ids = class_ids[0]
+        detection_count = detection_count[0].numpy()
+        for i in range(detection_count):
+            class_id = int(class_ids[i].numpy())
+            detections.append({
+                "class_id": class_id,
+                'class_name': self.class_names[class_id] if self.class_names else None,
+                "bounding_box": boxes[i].numpy(),
+                "detection_confidence": scores[i].numpy(),
+            })
+        return detections
 
 
 class YOLOTinyNetwork(BaseV3Net):
@@ -240,11 +269,17 @@ class YOLOTinyNetwork(BaseV3Net):
         channels: int,
         anchors: np.array,
         masks: np.array,
-        classes: int,
+        num_classes: int,
+        class_names: [],
         size=None,
         training=False,
     ):
-        super().__init__(size=size, channels=channels, classes=classes, training=training)
+        super().__init__(
+            size=size,
+            channels=channels,
+            num_classes=num_classes,
+            class_names=class_names,
+            training=training)
         if not anchors:
             self.anchors = np.array([(10, 14), (23, 27), (37, 58),
                                 (81, 82), (135, 169),  (344, 319)],
@@ -284,11 +319,17 @@ class YOLONetwork(BaseV3Net):
         channels: int,
         anchors: np.array,
         masks: np.array,
-        classes: int,
+        num_classes: int,
+        class_names: [],
         size=None,
         training=False,
     ):
-        super().__init__(size=size, channels=channels, classes=classes, training=training)
+        super().__init__(
+            size=size,
+            channels=channels,
+            num_classes=num_classes,
+            class_names=class_names,
+            training=training)
         if not anchors:
             self.anchors = np.array([(10, 13), (16, 30), (33, 23), (30, 61), (62, 45),
                          (59, 119), (116, 90), (156, 198), (373, 326)],
@@ -328,7 +369,8 @@ def yolo_v3(
     channels=3,
     anchors=None,
     masks=None,
-    classes=80,
+    num_classes=80,
+    class_names=None,
     training=False,
     use_tiny=False,
     just_model=True,
@@ -338,7 +380,8 @@ def yolo_v3(
         channels=channels,
         anchors=anchors,
         masks=masks,
-        classes=classes,
+        num_classes=num_classes,
+        class_names=class_names,
         size=size,
         training=training,
     )

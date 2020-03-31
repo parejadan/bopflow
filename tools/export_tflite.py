@@ -24,7 +24,7 @@ flags.DEFINE_integer('size', 416, 'image size')
 
 # TODO: This is broken DOES NOT WORK !!
 def main(_argv):
-    yolo = yolo_v3(size=FLAGS.size, classes=FLAGS.num_classes, use_tiny=FLAGS.tiny)
+    yolo = yolo_v3(size=FLAGS.size, num_classes=FLAGS.num_classes, use_tiny=FLAGS.tiny)
 
     yolo.load_weights(FLAGS.weights)
     logging.info('weights loaded')

@@ -46,7 +46,7 @@ def main(_argv):
     if len(physical_devices) > 0:
         tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-    network = yolo_v3(size=FLAGS.size, training=True, classes=FLAGS.num_classes, use_tiny=FLAGS.tiny, just_model=False)
+    network = yolo_v3(size=FLAGS.size, training=True, num_classes=FLAGS.num_classes, use_tiny=FLAGS.tiny, just_model=False)
     anchors = network.anchros
     anchor_masks = network.masks
     model = network.get_model()
@@ -83,7 +83,7 @@ def main(_argv):
         network = yolo_v3(
             size=FLAGS.size,
             training=True,
-            classes=FLAGS.weights_num_classes or FLAGS.num_classes,
+            num_classes=FLAGS.weights_num_classes or FLAGS.num_classes,
             use_tiny=FLAGS.tiny)
         model_pretrained.load_weights(FLAGS.weights)
 
@@ -111,7 +111,7 @@ def main(_argv):
             freeze_all(model)
 
     optimizer = tf.keras.optimizers.Adam(lr=FLAGS.learning_rate)
-    loss = [YoloLoss(anchors[mask], classes=FLAGS.num_classes)
+    loss = [YoloLoss(anchors[mask], num_classes=FLAGS.num_classes)
             for mask in anchor_masks]
 
     if FLAGS.mode == 'eager_tf':

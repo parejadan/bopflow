@@ -3,9 +3,10 @@ from absl import app, flags, logging
 from absl.flags import FLAGS
 import cv2
 import tensorflow as tf
-from bopflow.models.yolonet import coco_yolo_detector
+from bopflow.detect import coco_yolo_detector
 from bopflow.transform import transform_images
 from bopflow.iomanage import draw_outputs
+from bopflow.const import COCO_DEFAULT_CLASSES
 
 
 flags.DEFINE_string('classes', './data/coco.names', 'path to classes file')
@@ -26,12 +27,7 @@ def main(_argv):
         tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
     yolo = coco_yolo_detector(use_tiny=FLAGS.tiny)
-
-    yolo.load_weights(FLAGS.weights)
     logging.info('weights loaded')
-
-    class_names = [c.strip() for c in open(FLAGS.classes).readlines()]
-    logging.info('classes loaded')
 
     times = []
 
@@ -63,14 +59,12 @@ def main(_argv):
         img_in = transform_images(img_in, FLAGS.size)
 
         t1 = time.time()
-        boxes, scores, classes, nums = yolo.predict(img_in)
+        detections = yolo.evaluate(img)
         t2 = time.time()
         times.append(t2-t1)
         times = times[-20:]
 
-        img = draw_outputs(img, (boxes, scores, classes, nums), class_names)
-        img = cv2.putText(img, "Time: {:.2f}ms".format(sum(times)/len(times)*1000), (0, 30),
-                          cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 255), 2)
+        img = draw_outputs(img, detections)
         if FLAGS.output:
             out.write(img)
         cv2.imshow('output', img)

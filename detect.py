@@ -24,8 +24,6 @@ def main(_argv):
     yolo = coco_yolo_detector(use_tiny=FLAGS.tiny)
     logging.info('weights loaded')
 
-    logging.info('classes loaded')
-
     if FLAGS.tfrecord:
         img_raw, _ = load_random_tfrecord_dataset(FLAGS.tfrecord, FLAGS.classes)
     else:
@@ -35,18 +33,16 @@ def main(_argv):
     img = transform_images(img, DEFAULT_IMAGE_SIZE)
 
     t1 = time.time()
-    boxes, scores, classes, nums = yolo.evaluate(img)
+    detections = yolo.evaluate(img)
     t2 = time.time()
     logging.info('time: {}'.format(t2 - t1))
 
     logging.info('detections:')
-    for i in range(nums[0]):
-        logging.info('\t{}, {}, {}'.format(COCO_DEFAULT_CLASSES[int(classes[0][i])],
-                                           np.array(scores[0][i]),
-                                           np.array(boxes[0][i])))
+    for detected_class in detections:
+        logging.info(detected_class)
 
     img = cv2.cvtColor(img_raw.numpy(), cv2.COLOR_RGB2BGR)
-    img = draw_outputs(img, (boxes, scores, classes, nums), COCO_DEFAULT_CLASSES)
+    img = draw_outputs(img, detections)
     cv2.imwrite(FLAGS.output, img)
     logging.info('output saved to: {}'.format(FLAGS.output))
 
