@@ -39,8 +39,9 @@ def load_darknet_weights(model, weights_file, tiny=False):
             if not layer.name.startswith("conv2d"):
                 continue
             batch_norm = None
-            if i + 1 < len(sub_model.layers) and \
-                    sub_model.layers[i + 1].name.startswith("batch_norm"):
+            if i + 1 < len(sub_model.layers) and sub_model.layers[
+                i + 1
+            ].name.startswith("batch_norm"):
                 batch_norm = sub_model.layers[i + 1]
 
             filters = layer.filters
@@ -51,18 +52,17 @@ def load_darknet_weights(model, weights_file, tiny=False):
                 conv_bias = np.fromfile(wf, dtype=np.float32, count=filters)
             else:
                 # darknet [beta, gamma, mean, variance]
-                bn_weights = np.fromfile(
-                    wf, dtype=np.float32, count=4 * filters)
+                bn_weights = np.fromfile(wf, dtype=np.float32, count=4 * filters)
                 # tf [gamma, beta, mean, variance]
                 bn_weights = bn_weights.reshape((4, filters))[[1, 0, 2, 3]]
 
             # darknet shape (out_dim, in_dim, height, width)
             conv_shape = (filters, in_dim, size, size)
             conv_weights = np.fromfile(
-                wf, dtype=np.float32, count=np.product(conv_shape))
+                wf, dtype=np.float32, count=np.product(conv_shape)
+            )
             # tf shape (height, width, in_dim, out_dim)
-            conv_weights = conv_weights.reshape(
-                conv_shape).transpose([2, 3, 1, 0])
+            conv_weights = conv_weights.reshape(conv_shape).transpose([2, 3, 1, 0])
 
             if batch_norm is None:
                 layer.set_weights([conv_weights, conv_bias])
@@ -87,14 +87,12 @@ def draw_outputs(img, detections):
         img = cv2.rectangle(img, x1y1, x2y2, (255, 0, 0), 2)
         img = cv2.putText(
             img,
-             "{} {:.4f}".format(
-                 class_name,
-                 detection_confidence),
+            "{} {:.4f}".format(class_name, detection_confidence),
             x1y1,
             cv2.FONT_HERSHEY_COMPLEX_SMALL,
             1,
             (0, 0, 255),
-            2
+            2,
         )
     return img
 
@@ -108,8 +106,12 @@ def freeze_all(model, frozen=True):
 
 def load_tfrecord_dataset(file_pattern, class_file: str, size=DEFAULT_IMAGE_SIZE):
     LINE_NUMBER = -1
-    class_table = tf.lookup.StaticHashTable(tf.lookup.TextFileInitializer(
-        class_file, tf.string, 0, tf.int64, LINE_NUMBER, delimiter="\n"), -1)
+    class_table = tf.lookup.StaticHashTable(
+        tf.lookup.TextFileInitializer(
+            class_file, tf.string, 0, tf.int64, LINE_NUMBER, delimiter="\n"
+        ),
+        -1,
+    )
 
     files = tf.data.Dataset.list_files(file_pattern)
     dataset = files.flat_map(tf.data.TFRecordDataset)

@@ -29,7 +29,7 @@ def darknet_conv(x, filters: int, size: int, strides=1, batch_norm=True):
         strides=strides,
         padding=padding_flag,
         use_bias=use_bias,
-        kernel_regularizer=l2(0.0005)
+        kernel_regularizer=l2(0.0005),
     )(x)
 
     if batch_norm:
@@ -69,12 +69,7 @@ def darknet(name=None):
 
 
 def darknet_conv_max_pool(
-    x,
-    filters: int,
-    size: int,
-    pool_size=2,
-    pool_strides=2,
-    pool_padding="same",
+    x, filters: int, size: int, pool_size=2, pool_strides=2, pool_padding="same"
 ):
     x = darknet_conv(x=x, filters=filters, size=size)
     return MaxPool2D(pool_size=pool_size, strides=pool_strides, padding=pool_padding)(x)

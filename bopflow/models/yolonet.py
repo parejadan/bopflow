@@ -4,20 +4,27 @@ from tensorflow.keras import Model
 from tensorflow.keras.layers import Input, Lambda
 from tensorflow.keras.losses import binary_crossentropy, sparse_categorical_crossentropy
 
-from bopflow.models.darknet import (darknet_conv_upsampling, darknet_conv,
-                                    darknet, darknet_tiny)
+from bopflow.models.darknet import (
+    darknet_conv_upsampling,
+    darknet_conv,
+    darknet,
+    darknet_tiny,
+)
 from bopflow.models.utils import broadcast_iou
-from bopflow.const import YOLO_MAX_BOXES, YOLO_IOU_THRESHOLD, YOLO_SCORE_THRESHOLD, DEFAULT_IMAGE_SIZE
+from bopflow.const import (
+    YOLO_MAX_BOXES,
+    YOLO_IOU_THRESHOLD,
+    YOLO_SCORE_THRESHOLD,
+    DEFAULT_IMAGE_SIZE,
+)
 
 
 def yolo_conv(filters: int, name=None):
     def _yolo_conv(x_in):
         if isinstance(x_in, tuple):
             x, inputs = darknet_conv_upsampling(
-                x_in=x_in,
-                filters=filters,
-                size=1,
-                up_sampling=2)
+                x_in=x_in, filters=filters, size=1, up_sampling=2
+            )
         else:
             x = inputs = Input(x_in.shape[1:])
 
@@ -36,10 +43,8 @@ def yolo_conv_tiny(filters: int, name=None):
     def _yolo_conv(x_in):
         if isinstance(x_in, tuple):
             x, inputs = darknet_conv_upsampling(
-                x_in=x_in,
-                filters=filters,
-                size=1,
-                up_sampling=2)
+                x_in=x_in, filters=filters, size=1, up_sampling=2
+            )
         else:
             x = inputs = Input(x_in.shape[1:])
             x = darknet_conv(x=x, filters=filters, size=1)
@@ -53,11 +58,12 @@ def yolo_output(filters: int, anchors, num_classes, name=None):
     def _yolo_output(x_in):
         x = inputs = Input(x_in.shape[1:])
         x = darknet_conv(x=x, filters=filters * 2, size=3)
-        x = darknet_conv(x=x, filters=anchors * (num_classes + 5), size=1, batch_norm=False)
+        x = darknet_conv(
+            x=x, filters=anchors * (num_classes + 5), size=1, batch_norm=False
+        )
         x = Lambda(
             lambda x: tf.reshape(
-                x,
-                (-1, tf.shape(x)[1], tf.shape(x)[2], anchors, num_classes + 5)
+                x, (-1, tf.shape(x)[1], tf.shape(x)[2], anchors, num_classes + 5)
             )
         )(x)
 
@@ -70,7 +76,8 @@ def yolo_boxes(pred, anchors, num_classes):
     # pred: (batch_size, grid, grid, anchors, (x, y, w, h, obj, ...num_classes))
     grid_size = tf.shape(pred)[1]
     box_xy, box_wh, objectness, class_probs = tf.split(
-        pred, (2, 2, 1, num_classes), axis=-1)
+        pred, (2, 2, 1, num_classes), axis=-1
+    )
 
     box_xy = tf.sigmoid(box_xy)
     objectness = tf.sigmoid(objectness)
@@ -81,8 +88,7 @@ def yolo_boxes(pred, anchors, num_classes):
     grid = tf.meshgrid(tf.range(grid_size), tf.range(grid_size))
     grid = tf.expand_dims(tf.stack(grid, axis=-1), axis=2)  # [gx, gy, 1, 2]
 
-    box_xy = (box_xy + tf.cast(grid, tf.float32)) / \
-        tf.cast(grid_size, tf.float32)
+    box_xy = (box_xy + tf.cast(grid, tf.float32)) / tf.cast(grid_size, tf.float32)
     box_wh = tf.exp(box_wh) * anchors
 
     box_x1y1 = box_xy - box_wh / 2
@@ -107,13 +113,11 @@ def yolo_nms(outputs, anchors, masks, num_classes):
     scores = confidence * class_probs
     boxes, scores, num_classes, valid_detections = tf.image.combined_non_max_suppression(
         boxes=tf.reshape(bbox, (tf.shape(bbox)[0], -1, 1, 4)),
-        scores=tf.reshape(
-            scores,
-            (tf.shape(scores)[0], -1, tf.shape(scores)[-1])),
+        scores=tf.reshape(scores, (tf.shape(scores)[0], -1, tf.shape(scores)[-1])),
         max_output_size_per_class=YOLO_MAX_BOXES,
         max_total_size=YOLO_MAX_BOXES,
         iou_threshold=YOLO_IOU_THRESHOLD,
-        score_threshold=YOLO_SCORE_THRESHOLD
+        score_threshold=YOLO_SCORE_THRESHOLD,
     )
 
     return boxes, scores, num_classes, valid_detections
@@ -124,14 +128,14 @@ def yolo_loss(anchors, num_classes=80, ignore_thresh=0.5):
         # 1. transform all pred outputs
         # y_pred: (batch_size, grid, grid, anchors, (x, y, w, h, obj, ...cls))
         pred_box, pred_obj, pred_class, pred_xywh = yolo_boxes(
-            y_pred, anchors, num_classes)
+            y_pred, anchors, num_classes
+        )
         pred_xy = pred_xywh[..., 0:2]
         pred_wh = pred_xywh[..., 2:4]
 
         # 2. transform all true outputs
         # y_true: (batch_size, grid, grid, anchors, (x1, y1, x2, y2, obj, cls))
-        true_box, true_obj, true_class_idx = tf.split(
-            y_true, (4, 1, 1), axis=-1)
+        true_box, true_obj, true_class_idx = tf.split(y_true, (4, 1, 1), axis=-1)
         true_xy = (true_box[..., 0:2] + true_box[..., 2:4]) / 2
         true_wh = true_box[..., 2:4] - true_box[..., 0:2]
 
@@ -142,33 +146,40 @@ def yolo_loss(anchors, num_classes=80, ignore_thresh=0.5):
         grid_size = tf.shape(y_true)[1]
         grid = tf.meshgrid(tf.range(grid_size), tf.range(grid_size))
         grid = tf.expand_dims(tf.stack(grid, axis=-1), axis=2)
-        true_xy = true_xy * tf.cast(grid_size, tf.float32) - \
-            tf.cast(grid, tf.float32)
+        true_xy = true_xy * tf.cast(grid_size, tf.float32) - tf.cast(grid, tf.float32)
         true_wh = tf.math.log(true_wh / anchors)
-        true_wh = tf.where(tf.math.is_inf(true_wh),
-                           tf.zeros_like(true_wh), true_wh)
+        true_wh = tf.where(tf.math.is_inf(true_wh), tf.zeros_like(true_wh), true_wh)
 
         # 4. calculate all masks
         obj_mask = tf.squeeze(true_obj, -1)
         # ignore false positive when iou is over threshold
         best_iou = tf.map_fn(
-            lambda x: tf.reduce_max(broadcast_iou(x[0], tf.boolean_mask(
-                x[1], tf.cast(x[2], tf.bool))), axis=-1),
+            lambda x: tf.reduce_max(
+                broadcast_iou(x[0], tf.boolean_mask(x[1], tf.cast(x[2], tf.bool))),
+                axis=-1,
+            ),
             (pred_box, true_box, obj_mask),
-            tf.float32)
+            tf.float32,
+        )
         ignore_mask = tf.cast(best_iou < ignore_thresh, tf.float32)
 
         # 5. calculate all losses
-        xy_loss = obj_mask * box_loss_scale * \
-            tf.reduce_sum(tf.square(true_xy - pred_xy), axis=-1)
-        wh_loss = obj_mask * box_loss_scale * \
-            tf.reduce_sum(tf.square(true_wh - pred_wh), axis=-1)
+        xy_loss = (
+            obj_mask
+            * box_loss_scale
+            * tf.reduce_sum(tf.square(true_xy - pred_xy), axis=-1)
+        )
+        wh_loss = (
+            obj_mask
+            * box_loss_scale
+            * tf.reduce_sum(tf.square(true_wh - pred_wh), axis=-1)
+        )
         obj_loss = binary_crossentropy(true_obj, pred_obj)
-        obj_loss = obj_mask * obj_loss + \
-            (1 - obj_mask) * ignore_mask * obj_loss
+        obj_loss = obj_mask * obj_loss + (1 - obj_mask) * ignore_mask * obj_loss
         # TODO: use binary_crossentropy instead
         class_loss = obj_mask * sparse_categorical_crossentropy(
-            true_class_idx, pred_class)
+            true_class_idx, pred_class
+        )
 
         # 6. sum over (batch, gridx, gridy, anchors) => (batch, 1)
         xy_loss = tf.reduce_sum(xy_loss, axis=(1, 2, 3))
@@ -207,8 +218,8 @@ class BaseV3Net:
             filters=filters,
             anchors=len(self.masks[mask_index]),
             num_classes=self.num_classes,
-            name=f"yolo_output_{mask_index}"
-            )(x)
+            name=f"yolo_output_{mask_index}",
+        )(x)
 
         return x, output_layer
 
@@ -216,7 +227,7 @@ class BaseV3Net:
         anchors = self.anchors[self.masks[mask_index]]
         lambda_instance = Lambda(
             lambda x: yolo_boxes(pred=x, anchors=anchors, num_classes=self.num_classes),
-            name=f"yolo_boxes_{mask_index}"
+            name=f"yolo_boxes_{mask_index}",
         )
 
         return lambda_instance(output_layer)
@@ -224,7 +235,7 @@ class BaseV3Net:
     def get_output(self, boxes: tuple):
         lambda_instance = Lambda(
             lambda x: yolo_nms(x, self.anchors, self.masks, self.num_classes),
-            name="yolo_nms"
+            name="yolo_nms",
         )
 
         return lambda_instance(boxes)
@@ -254,12 +265,16 @@ class BaseV3Net:
         detection_count = detection_count[0].numpy()
         for i in range(detection_count):
             class_id = int(class_ids[i].numpy())
-            detections.append({
-                "class_id": class_id,
-                'class_name': self.class_names[class_id] if self.class_names else None,
-                "bounding_box": boxes[i].numpy(),
-                "detection_confidence": scores[i].numpy(),
-            })
+            detections.append(
+                {
+                    "class_id": class_id,
+                    "class_name": self.class_names[class_id]
+                    if self.class_names
+                    else None,
+                    "bounding_box": boxes[i].numpy(),
+                    "detection_confidence": scores[i].numpy(),
+                }
+            )
         return detections
 
 
@@ -279,11 +294,16 @@ class YOLOTinyNetwork(BaseV3Net):
             channels=channels,
             num_classes=num_classes,
             class_names=class_names,
-            training=training)
+            training=training,
+        )
         if not anchors:
-            self.anchors = np.array([(10, 14), (23, 27), (37, 58),
-                                (81, 82), (135, 169),  (344, 319)],
-                                np.float32) / DEFAULT_IMAGE_SIZE
+            self.anchors = (
+                np.array(
+                    [(10, 14), (23, 27), (37, 58), (81, 82), (135, 169), (344, 319)],
+                    np.float32,
+                )
+                / DEFAULT_IMAGE_SIZE
+            )
         else:
             self.anchors = anchors
         if not masks:
@@ -329,11 +349,26 @@ class YOLONetwork(BaseV3Net):
             channels=channels,
             num_classes=num_classes,
             class_names=class_names,
-            training=training)
+            training=training,
+        )
         if not anchors:
-            self.anchors = np.array([(10, 13), (16, 30), (33, 23), (30, 61), (62, 45),
-                         (59, 119), (116, 90), (156, 198), (373, 326)],
-                        np.float32) / DEFAULT_IMAGE_SIZE
+            self.anchors = (
+                np.array(
+                    [
+                        (10, 13),
+                        (16, 30),
+                        (33, 23),
+                        (30, 61),
+                        (62, 45),
+                        (59, 119),
+                        (116, 90),
+                        (156, 198),
+                        (373, 326),
+                    ],
+                    np.float32,
+                )
+                / DEFAULT_IMAGE_SIZE
+            )
         else:
             self.anchors = anchors
         if not masks:

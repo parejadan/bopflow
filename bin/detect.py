@@ -39,14 +39,26 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Performce once off image detection using yolov3 default detector"
     )
-    parser.add_argument("-image", dest="image",
-                        help="image file to perform detection on")
-    parser.add_argument("--tiny", action="store_true",
-                        help="pass if you want to perform detection with tiny network")
-    parser.add_argument("--weights-path", dest="weights_path", default="./checkpoints/yolov3.tf",
-                        help="path to network weights to use for detection")
-    parser.add_argument("--output", dest="output", default="output.jpg",
-                        help="filepath to output detection result")
+    parser.add_argument(
+        "-image", dest="image", help="image file to perform detection on"
+    )
+    parser.add_argument(
+        "--tiny",
+        action="store_true",
+        help="pass if you want to perform detection with tiny network",
+    )
+    parser.add_argument(
+        "--weights-path",
+        dest="weights_path",
+        default="./checkpoints/yolov3.tf",
+        help="path to network weights to use for detection",
+    )
+    parser.add_argument(
+        "--output",
+        dest="output",
+        default="output.jpg",
+        help="filepath to output detection result",
+    )
     args = parser.parse_args()
 
     main(args)

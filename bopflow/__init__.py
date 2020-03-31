@@ -8,7 +8,8 @@ def get_logger(name, clear_logfile=True):
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
-        "%(asctime)s - %(levelname)s - Line: %(lineno)d of %(funcName)s -- %(message)s")
+        "%(asctime)s - %(levelname)s - Line: %(lineno)d of %(funcName)s -- %(message)s"
+    )
 
     # create console handler and set level to debug
     ch = logging.StreamHandler()
