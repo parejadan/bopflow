@@ -4,9 +4,10 @@ from absl.flags import FLAGS
 import cv2
 import numpy as np
 import tensorflow as tf
-from bopflow.detect import default_detector
+from bopflow.detect import coco_yolo_detector
 from bopflow.transform import transform_images, load_tfrecord_dataset
-from yolov3_tf2.utils import draw_outputs
+from bopflow.const import DEFAULT_IMAGE_SIZE
+from bopflow.iomanage import draw_outputs
 
 flags.DEFINE_string('classes', './data/coco.names', 'path to classes file')
 flags.DEFINE_string('weights', './checkpoints/yolov3.tf',
@@ -24,7 +25,7 @@ def main(_argv):
     if len(physical_devices) > 0:
         tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-    yolo = default_detector(weights_path=FLAGS.weights, class_count=FLAGS.num_classes, use_tiny=FLAGS.tiny)
+    yolo = coco_yolo_detector(use_tiny=FLAGS.tiny)
     logging.info('weights loaded')
 
     class_names = [c.strip() for c in open(FLAGS.classes).readlines()]
@@ -32,7 +33,7 @@ def main(_argv):
 
     if FLAGS.tfrecord:
         dataset = load_tfrecord_dataset(
-            FLAGS.tfrecord, FLAGS.classes, FLAGS.size)
+            FLAGS.tfrecord, FLAGS.classes, DEFAULT_IMAGE_SIZE)
         dataset = dataset.shuffle(512)
         img_raw, _label = next(iter(dataset.take(1)))
     else:
@@ -40,7 +41,7 @@ def main(_argv):
             open(FLAGS.image, 'rb').read(), channels=3)
 
     img = tf.expand_dims(img_raw, 0)
-    img = transform_images(img, FLAGS.size)
+    img = transform_images(img, DEFAULT_IMAGE_SIZE)
 
     t1 = time.time()
     boxes, scores, classes, nums = yolo.evaluate(img)

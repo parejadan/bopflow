@@ -81,37 +81,37 @@ def transform_images(x_train, size):
 # https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/using_your_own_dataset.md#conversion-script-outline-conversion-script-outline
 # Commented out fields are not required in our project
 IMAGE_FEATURE_MAP = {
-    # 'image/width': tf.io.FixedLenFeature([], tf.int64),
-    # 'image/height': tf.io.FixedLenFeature([], tf.int64),
-    # 'image/filename': tf.io.FixedLenFeature([], tf.string),
-    # 'image/source_id': tf.io.FixedLenFeature([], tf.string),
-    # 'image/key/sha256': tf.io.FixedLenFeature([], tf.string),
-    'image/encoded': tf.io.FixedLenFeature([], tf.string),
-    # 'image/format': tf.io.FixedLenFeature([], tf.string),
-    'image/object/bbox/xmin': tf.io.VarLenFeature(tf.float32),
-    'image/object/bbox/ymin': tf.io.VarLenFeature(tf.float32),
-    'image/object/bbox/xmax': tf.io.VarLenFeature(tf.float32),
-    'image/object/bbox/ymax': tf.io.VarLenFeature(tf.float32),
-    'image/object/class/text': tf.io.VarLenFeature(tf.string),
-    # 'image/object/class/label': tf.io.VarLenFeature(tf.int64),
-    # 'image/object/difficult': tf.io.VarLenFeature(tf.int64),
-    # 'image/object/truncated': tf.io.VarLenFeature(tf.int64),
-    # 'image/object/view': tf.io.VarLenFeature(tf.string),
+    # "image/width": tf.io.FixedLenFeature([], tf.int64),
+    # "image/height": tf.io.FixedLenFeature([], tf.int64),
+    # "image/filename": tf.io.FixedLenFeature([], tf.string),
+    # "image/source_id": tf.io.FixedLenFeature([], tf.string),
+    # "image/key/sha256": tf.io.FixedLenFeature([], tf.string),
+    "image/encoded": tf.io.FixedLenFeature([], tf.string),
+    # "image/format": tf.io.FixedLenFeature([], tf.string),
+    "image/object/bbox/xmin": tf.io.VarLenFeature(tf.float32),
+    "image/object/bbox/ymin": tf.io.VarLenFeature(tf.float32),
+    "image/object/bbox/xmax": tf.io.VarLenFeature(tf.float32),
+    "image/object/bbox/ymax": tf.io.VarLenFeature(tf.float32),
+    "image/object/class/text": tf.io.VarLenFeature(tf.string),
+    # "image/object/class/label": tf.io.VarLenFeature(tf.int64),
+    # "image/object/difficult": tf.io.VarLenFeature(tf.int64),
+    # "image/object/truncated": tf.io.VarLenFeature(tf.int64),
+    # "image/object/view": tf.io.VarLenFeature(tf.string),
 }
 
 
 def parse_tfrecord(tfrecord, class_table, size):
     x = tf.io.parse_single_example(tfrecord, IMAGE_FEATURE_MAP)
-    x_train = tf.image.decode_jpeg(x['image/encoded'], channels=3)
+    x_train = tf.image.decode_jpeg(x["image/encoded"], channels=3)
     x_train = tf.image.resize(x_train, (size, size))
 
     class_text = tf.sparse.to_dense(
-        x['image/object/class/text'], default_value='')
+        x["image/object/class/text"], default_value="")
     labels = tf.cast(class_table.lookup(class_text), tf.float32)
-    y_train = tf.stack([tf.sparse.to_dense(x['image/object/bbox/xmin']),
-                        tf.sparse.to_dense(x['image/object/bbox/ymin']),
-                        tf.sparse.to_dense(x['image/object/bbox/xmax']),
-                        tf.sparse.to_dense(x['image/object/bbox/ymax']),
+    y_train = tf.stack([tf.sparse.to_dense(x["image/object/bbox/xmin"]),
+                        tf.sparse.to_dense(x["image/object/bbox/ymin"]),
+                        tf.sparse.to_dense(x["image/object/bbox/xmax"]),
+                        tf.sparse.to_dense(x["image/object/bbox/ymax"]),
                         labels], axis=1)
 
     paddings = [[0, YOLO_MAX_BOXES - tf.shape(y_train)[0]], [0, 0]]
@@ -132,7 +132,7 @@ def load_tfrecord_dataset(file_pattern, class_file, size=416):
 
 def load_fake_dataset():
     x_train = tf.image.decode_jpeg(
-        open('./data/girl.png', 'rb').read(), channels=3)
+        open("./data/girl.png", "rb").read(), channels=3)
     x_train = tf.expand_dims(x_train, axis=0)
 
     labels = [

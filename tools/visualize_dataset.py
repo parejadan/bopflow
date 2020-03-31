@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import tensorflow as tf
 from bopflow.transofrm import load_tfrecord_dataset, transform_images
-from yolov3_tf2.utils import draw_outputs
+from bopflow.iomanage import draw_outputs
 
 flags.DEFINE_string('classes', './data/coco.names', 'path to classes file')
 flags.DEFINE_integer('size', 416, 'resize images to')

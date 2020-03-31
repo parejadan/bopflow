@@ -3,27 +3,28 @@ import numpy as np
 import tensorflow as tf
 import cv2
 
+
 YOLOV3_LAYER_LIST = [
-    'yolo_darknet',
-    'yolo_conv_0',
-    'yolo_output_0',
-    'yolo_conv_1',
-    'yolo_output_1',
-    'yolo_conv_2',
-    'yolo_output_2',
+    "yolo_darknet",
+    "yolo_conv_0",
+    "yolo_output_0",
+    "yolo_conv_1",
+    "yolo_output_1",
+    "yolo_conv_2",
+    "yolo_output_2",
 ]
 
 YOLOV3_TINY_LAYER_LIST = [
-    'yolo_darknet',
-    'yolo_conv_0',
-    'yolo_output_0',
-    'yolo_conv_1',
-    'yolo_output_1',
+    "yolo_darknet",
+    "yolo_conv_0",
+    "yolo_output_0",
+    "yolo_conv_1",
+    "yolo_output_1",
 ]
 
 
 def load_darknet_weights(model, weights_file, tiny=False):
-    wf = open(weights_file, 'rb')
+    wf = open(weights_file, "rb")
     major, minor, revision, seen, _ = np.fromfile(wf, dtype=np.int32, count=5)
 
     if tiny:
@@ -34,15 +35,15 @@ def load_darknet_weights(model, weights_file, tiny=False):
     for layer_name in layers:
         sub_model = model.get_layer(layer_name)
         for i, layer in enumerate(sub_model.layers):
-            if not layer.name.startswith('conv2d'):
+            if not layer.name.startswith("conv2d"):
                 continue
             batch_norm = None
             if i + 1 < len(sub_model.layers) and \
-                    sub_model.layers[i + 1].name.startswith('batch_norm'):
+                    sub_model.layers[i + 1].name.startswith("batch_norm"):
                 batch_norm = sub_model.layers[i + 1]
 
             logging.info("{}/{} {}".format(
-                sub_model.name, layer.name, 'bn' if batch_norm else 'bias'))
+                sub_model.name, layer.name, "bn" if batch_norm else "bias"))
 
             filters = layer.filters
             size = layer.kernel_size[0]
@@ -71,7 +72,7 @@ def load_darknet_weights(model, weights_file, tiny=False):
                 layer.set_weights([conv_weights])
                 batch_norm.set_weights(bn_weights)
 
-    assert len(wf.read()) == 0, 'failed to read all data'
+    assert len(wf.read()) == 0, "failed to read all data"
     wf.close()
 
 
@@ -83,7 +84,7 @@ def draw_outputs(img, outputs, class_names):
         x1y1 = tuple((np.array(boxes[i][0:2]) * wh).astype(np.int32))
         x2y2 = tuple((np.array(boxes[i][2:4]) * wh).astype(np.int32))
         img = cv2.rectangle(img, x1y1, x2y2, (255, 0, 0), 2)
-        img = cv2.putText(img, '{} {:.4f}'.format(
+        img = cv2.putText(img, "{} {:.4f}".format(
             class_names[int(classes[i])], objectness[i]),
             x1y1, cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 255), 2)
     return img

@@ -5,7 +5,7 @@ import cv2
 import tensorflow as tf
 from bopflow.models.yolonet import yolo_v3
 from bopflow.transform import transform_images
-from yolov3_tf2.utils import draw_outputs
+from bopflow.iomanage import draw_outputs
 
 
 flags.DEFINE_string('classes', './data/coco.names', 'path to classes file')

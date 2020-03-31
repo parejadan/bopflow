@@ -11,7 +11,7 @@ from tensorflow.keras.callbacks import (
     TensorBoard
 )
 from bopflow.models.yolonet import yolo_v3, yolo_loss
-from yolov3_tf2.utils import freeze_all
+from bopflow.iomanage import freeze_all
 from bopflow.transform import dataset
 
 
