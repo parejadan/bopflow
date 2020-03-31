@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 from bopflow.models.yolonet import yolo_v3
 from bopflow.transofrm import transform_images
-from bopflow.const import DEFAULT_IMAGE_SIZE
+from bopflow.const import DEFAULT_IMAGE_SIZE, COCO_DEFAULT_CLASSES
 
 from tensorflow.python.eager import def_function
 from tensorflow.python.framework import tensor_spec
@@ -17,10 +17,9 @@ flags.DEFINE_string('weights', './checkpoints/yolov3.tf',
 flags.DEFINE_boolean('tiny', False, 'yolov3 or yolov3-tiny')
 flags.DEFINE_string('output', './checkpoints/yolov3.tflite',
                     'path to saved_model')
-flags.DEFINE_string('classes', './data/coco.names', 'path to classes file')
+flags.DEFINE_string('classes', None, 'path to classes file')
 flags.DEFINE_string('image', './data/girl.png', 'path to input image')
-flags.DEFINE_integer('num_classes', 80, 'number of classes in the model')
-flags.DEFINE_integer('size', 416, 'image size')
+flags.DEFINE_integer('num_classes', len(COCO_DEFAULT_CLASSES), 'number of classes in the model')
 
 # TODO: This is broken DOES NOT WORK !!
 def main(_argv):
@@ -41,8 +40,11 @@ def main(_argv):
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
 
-    class_names = [c.strip() for c in open(FLAGS.classes).readlines()]
-    logging.info('classes loaded')
+    if FLAGS.classes:
+        class_names = [c.strip() for c in open(FLAGS.classes).readlines()]
+        logging.info('classes loaded')
+    else:
+        class_names = COCO_DEFAULT_CLASSES
 
     img = tf.image.decode_image(open(FLAGS.image, 'rb').read(), channels=3)
     img = tf.expand_dims(img, 0)

@@ -15,10 +15,10 @@ python detect.py --image "/Users/danielpareja/sandbox/bop-projects/boplabel/data
    - [x] dataset.py (parsing)
    - [x] utils.py (subsections)
    - [x] batch_norm.py
-   - [ ] detect.py -> bin/detect.py
-   - [ ] tools -> bin/*
-   - [ ] detect_video.py -> bin/detect_video.py
-   - [ ] train.py -> bin/train.py
+   - [x] detect.py -> bin/detect.py
+   - [x] tools -> bin/*
+   - [x] detect_video.py -> bin/detect_video.py
+   - [x] train.py -> bin/train.py
    - [ ] data + checkpoint directory (output paths)
 2. [ ] convert setup.py to pip dependency
 3. [ ] strip tutorial code into documented interfaces
