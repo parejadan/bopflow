@@ -15,13 +15,18 @@ python detect.py --image "/Users/danielpareja/sandbox/bop-projects/boplabel/data
    - [x] dataset.py (parsing)
    - [x] utils.py (subsections)
    - [x] batch_norm.py
-   - [ ] detect.py
-2. [ ] strip tutorial code into documented interfaces
-3. [ ] revamp docs
-4. [ ] setup code for creating as pip dependency
-5. [ ] deploy code to private PYPI registry (AWS)
-6. [ ] add automated test coverage
-7. [ ] setup automatic deployment pipeline
+   - [ ] detect.py -> bin/detect.py
+   - [ ] tools -> bin/*
+   - [ ] detect_video.py -> bin/detect_video.py
+   - [ ] train.py -> bin/train.py
+   - [ ] data + checkpoint directory (output paths)
+2. [ ] convert setup.py to pip dependency
+3. [ ] strip tutorial code into documented interfaces
+4. [ ] revamp docs
+5. [ ] setup code for creating as pip dependency
+6. [ ] deploy code to private PYPI registry (AWS)
+7. [ ] add automated test coverage
+8. [ ] setup automatic deployment pipeline
 
 
 ## TODO - training
