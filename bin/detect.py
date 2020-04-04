@@ -6,8 +6,8 @@ import argparse
 
 from bopflow.detect import coco_yolo_detector
 from bopflow.transform import transform_images
-from bopflow.const import DEFAULT_IMAGE_SIZE, COCO_DEFAULT_CLASSES
-from bopflow.iomanage import draw_outputs, load_random_tfrecord_dataset, load_image_file
+from bopflow.const import DEFAULT_IMAGE_SIZE
+from bopflow.iomanage import draw_outputs, load_image_file
 from bopflow import LOGGER
 
 
@@ -26,8 +26,8 @@ def main(args):
     LOGGER.info("time: {}".format(t2 - t1))
 
     LOGGER.info("detections:")
-    for detected_class in detections:
-        LOGGER.info(detected_class)
+    for result in detections:
+        LOGGER.info(result.as_dict)
 
     img = cv2.cvtColor(img_raw.numpy(), cv2.COLOR_RGB2BGR)
     img = draw_outputs(img, detections)

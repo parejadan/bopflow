@@ -3,6 +3,7 @@ import tensorflow as tf
 import cv2
 
 from bopflow.const import DEFAULT_IMAGE_SIZE
+from bopflow.models.utils import DetectionOutput
 
 
 YOLOV3_LAYER_LIST = [
@@ -74,20 +75,16 @@ def load_darknet_weights(model, weights_file, tiny=False):
     wf.close()
 
 
-def draw_outputs(img, detections):
+def draw_outputs(img, detections: [DetectionOutput]):
     wh = np.flip(img.shape[0:2])
-    for detected_class in detections:
-        bounding_box = detected_class["bounding_box"]
-        detection_confidence = detected_class["detection_confidence"]
-        class_name = detected_class["class_name"]
-
-        x1y1 = tuple((bounding_box[0:2] * wh).astype(np.int32))
-        x2y2 = tuple((bounding_box[2:4] * wh).astype(np.int32))
+    for result in detections:
+        x1y1 = tuple((result.box.x1y1 * wh).astype(np.int32))
+        x2y2 = tuple((result.box.x2y2 * wh).astype(np.int32))
 
         img = cv2.rectangle(img, x1y1, x2y2, (255, 0, 0), 2)
         img = cv2.putText(
             img,
-            "{} {:.4f}".format(class_name, detection_confidence),
+            "{} {:.4f}".format(result.class_name, result.confidence_score),
             x1y1,
             cv2.FONT_HERSHEY_COMPLEX_SMALL,
             1,
