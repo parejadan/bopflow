@@ -19,11 +19,11 @@ def execute(cmd):
 
 
 def create_package():
-    execute(["python", "setup.py", "sdist"])
+    execute(["python", "setup.py", "bdist_wheel"])
 
 
 def get_package_path(output_dir):
-    return glob.glob(f"{output_dir}/*")[0]
+    return glob.glob(f"{output_dir}/*.whl")[0]
 
 
 def update_index_file(package_name):
