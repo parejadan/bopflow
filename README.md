@@ -43,11 +43,14 @@ docker run -v $(pwd):/code mercutiodesign/docker-black black .
 3. [ ] version weights and have code reference version
 
 ## TODO - Nice to have
-4. [ ] strip tutorial code into documented interfaces
+4. [-] strip tutorial code into documented interfaces
 5. [ ] revamp docs
-6. [ ] deploy code to private PYPI registry (AWS)
+6. [-] deploy code to private PYPI registry (AWS)
+   - not private but s3 public access
+   - [ ] add private permissions if issue
 7. [ ] add automated test coverage
-8. [ ] setup automatic deployment pipeline
+8. [x] setup automatic deployment pipeline
+   1. [ ] add github hooks for deployment trigger
 
 
 ## TODO - training
