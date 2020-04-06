@@ -61,24 +61,26 @@ class BBox:
         return self.x2y2[1]
 
 
+class DetectionLabel:
+    def __init__(self, number: int, name: str):
+        self.number = number
+        self.name = name
+
+    @property
+    def as_dict(self):
+        return {"number": self.number, "name": self.name}
+
+
 class DetectionOutput:
-    def __init__(
-        self,
-        box: np.array,
-        score:np.float32,
-        class_number: np.int32,
-        class_name: str
-    ):
+    def __init__(self, box: np.array, score: np.float32, label: DetectionLabel):
         self.box = BBox(x1y1=box[0:2], x2y2=box[2:4])
         self.confidence_score = score
-        self.class_number = class_number
-        self.class_name = class_name
+        self.label = label
 
     @property
     def as_dict(self):
         return {
             "box": self.box.as_dict,
             "confidence_score": self.confidence_score,
-            "class_number": self.class_number,
-            "class_name": self.class_name,
+            "label": self.label.as_dict,
         }

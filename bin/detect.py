@@ -1,5 +1,4 @@
 import time
-import cv2
 import numpy as np
 import tensorflow as tf
 import argparse
@@ -7,7 +6,7 @@ import argparse
 from bopflow.detect import coco_yolo_detector
 from bopflow.transform import transform_images
 from bopflow.const import DEFAULT_IMAGE_SIZE
-from bopflow.iomanage import draw_outputs, load_image_file
+from bopflow.iomanage import load_image_file
 from bopflow import LOGGER
 
 
@@ -29,11 +28,6 @@ def main(args):
     for result in detections:
         LOGGER.info(result.as_dict)
 
-    img = cv2.cvtColor(img_raw.numpy(), cv2.COLOR_RGB2BGR)
-    img = draw_outputs(img, detections)
-    cv2.imwrite(args.output, img)
-    LOGGER.info("output saved to: {}".format(args.output))
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -52,12 +46,6 @@ if __name__ == "__main__":
         dest="weights_path",
         default="./checkpoints/yolov3.tf",
         help="path to network weights to use for detection",
-    )
-    parser.add_argument(
-        "--output",
-        dest="output",
-        default="output.jpg",
-        help="filepath to output detection result",
     )
     args = parser.parse_args()
 

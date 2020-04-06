@@ -10,7 +10,7 @@ from bopflow.models.darknet import (
     darknet,
     darknet_tiny,
 )
-from bopflow.models.utils import broadcast_iou, DetectionOutput
+from bopflow.models.utils import broadcast_iou, DetectionOutput, DetectionLabel
 from bopflow.const import (
     YOLO_MAX_BOXES,
     YOLO_IOU_THRESHOLD,
@@ -269,8 +269,12 @@ class BaseV3Net:
                 DetectionOutput(
                     box=boxes[i].numpy(),
                     score=scores[i].numpy(),
-                    class_number=class_number,
-                    class_name=self.class_names[class_number] if self.class_names else None,
+                    label=DetectionLabel(
+                        number=class_number,
+                        name=self.class_names[class_number]
+                        if self.class_names
+                        else None,
+                    ),
                 )
             )
         return detections

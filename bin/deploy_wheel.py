@@ -31,7 +31,7 @@ def update_index_file(package_name):
     print(f"> Creating template file [{temp_file}] for package [{package_name}]")
     with open(temp_file, "w") as fl:
         fl.write(
-            f"<html><body><a href=\"{package_name}\">{package_name}</a></body></html>"
+            f'<html><body><a href="{package_name}">{package_name}</a></body></html>'
         )
 
     execute(["aws", "s3", "cp", temp_file, f"{BUCKET_URI}/index.html"])
