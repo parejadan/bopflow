@@ -322,7 +322,7 @@ class YOLOTinyNetwork(BaseV3Net):
 
         x, output_0 = self.get_conv(x=x, x_prev=None, filters=256, mask_index=0)
 
-        x, output_1 = self.get_conv(x=x, x_prev=x_8, filters=128, mask_index=0)
+        x, output_1 = self.get_conv(x=x, x_prev=x_8, filters=128, mask_index=1)
 
         if self.training:
             self.model = Model(inputs, (output_0, output_1), name="yolov3")

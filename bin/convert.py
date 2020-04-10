@@ -7,7 +7,7 @@ from bopflow import LOGGER
 
 
 def main(args):
-    yolo = yolo_v3(num_classes=args.num_classes, use_tiny=True)
+    yolo = yolo_v3(num_classes=args.num_classes, use_tiny=args.tiny)
     yolo.summary()
     LOGGER.info("model created")
 
@@ -27,7 +27,7 @@ if __name__ == "__main__":
         description="Convert yolo3 darknet weights to tf yolov3 weights"
     )
     parser.add_argument(
-        "-num_classes", dest="image", help="number of classes in the model"
+        "--num_classes", default=80, help="number of classes in the model"
     )
     parser.add_argument(
         "--tiny",
