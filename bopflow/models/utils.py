@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+from tensorflow.keras.layers import Lambda
 
 
 def broadcast_iou(box_1, box_2):
@@ -28,6 +29,38 @@ def broadcast_iou(box_1, box_2):
     box_1_area = (box_1[..., 2] - box_1[..., 0]) * (box_1[..., 3] - box_1[..., 1])
     box_2_area = (box_2[..., 2] - box_2[..., 0]) * (box_2[..., 3] - box_2[..., 1])
     return int_area / (box_1_area + box_2_area - int_area)
+
+
+def reshape_lambda(anchors, num_classes):
+    def _reshape(x):
+        x = tf.reshape(x, (-1, tf.shape(x)[1], tf.shape(x)[2], anchors, num_classes))
+        return x
+
+    return Lambda(_reshape)
+
+
+def reduce_max_lambda(x):
+    x = tf.reduce_max(
+        broadcast_iou(x[0], tf.boolean_mask(x[1], tf.cast(x[2], tf.bool))), axis=-1
+    )
+
+    return x
+
+
+def boxes_lambda(box_func, anchors, num_classes, lambda_name):
+    def _boxes(x):
+        return box_func(pred=x, anchors=anchors, num_classes=num_classes)
+
+    return Lambda(_boxes, name=lambda_name)
+
+
+def nms_lambda(nms_func, anchors, masks, num_classes, lambda_name):
+    def _nms(x):
+        return nms_func(
+            outputs=x, anchors=anchors, masks=masks, num_classes=num_classes
+        )
+
+    return Lambda(_nms, name=lambda_name)
 
 
 class BBox:

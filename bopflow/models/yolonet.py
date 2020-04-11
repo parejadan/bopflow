@@ -10,7 +10,14 @@ from bopflow.models.darknet import (
     darknet,
     darknet_tiny,
 )
-from bopflow.models.utils import broadcast_iou, DetectionOutput, DetectionLabel
+from bopflow.models.utils import (
+    DetectionOutput,
+    DetectionLabel,
+    reshape_lambda,
+    reduce_max_lambda,
+    boxes_lambda,
+    nms_lambda,
+)
 from bopflow.const import (
     YOLO_MAX_BOXES,
     YOLO_IOU_THRESHOLD,
@@ -61,11 +68,7 @@ def yolo_output(filters: int, anchors, num_classes, name=None):
         x = darknet_conv(
             x=x, filters=anchors * (num_classes + 5), size=1, batch_norm=False
         )
-        x = Lambda(
-            lambda x: tf.reshape(
-                x, (-1, tf.shape(x)[1], tf.shape(x)[2], anchors, num_classes + 5)
-            )
-        )(x)
+        x = reshape_lambda(anchors=anchors, num_classes=num_classes + 5)(x)
 
         return tf.keras.Model(inputs, x, name=name)(x_in)
 
@@ -153,13 +156,9 @@ def yolo_loss(anchors, num_classes=80, ignore_thresh=0.5):
         # 4. calculate all masks
         obj_mask = tf.squeeze(true_obj, -1)
         # ignore false positive when iou is over threshold
+
         best_iou = tf.map_fn(
-            lambda x: tf.reduce_max(
-                broadcast_iou(x[0], tf.boolean_mask(x[1], tf.cast(x[2], tf.bool))),
-                axis=-1,
-            ),
-            (pred_box, true_box, obj_mask),
-            tf.float32,
+            reduce_max_lambda, (pred_box, true_box, obj_mask), tf.float32
         )
         ignore_mask = tf.cast(best_iou < ignore_thresh, tf.float32)
 
@@ -224,18 +223,22 @@ class BaseV3Net:
         return x, output_layer
 
     def get_lambda_boxes(self, output_layer, mask_index: int):
-        anchors = self.anchors[self.masks[mask_index]]
-        lambda_instance = Lambda(
-            lambda x: yolo_boxes(pred=x, anchors=anchors, num_classes=self.num_classes),
-            name=f"yolo_boxes_{mask_index}",
+        lambda_instance = boxes_lambda(
+            box_func=yolo_boxes,
+            anchors=self.anchors[self.masks[mask_index]],
+            num_classes=self.num_classes,
+            lambda_name=f"yolo_boxes_{mask_index}",
         )
 
         return lambda_instance(output_layer)
 
     def get_output(self, boxes: tuple):
-        lambda_instance = Lambda(
-            lambda x: yolo_nms(x, self.anchors, self.masks, self.num_classes),
-            name="yolo_nms",
+        lambda_instance = nms_lambda(
+            nms_func=yolo_nms,
+            anchors=self.anchors,
+            masks=self.masks,
+            num_classes=self.num_classes,
+            lambda_name="yolo_nms",
         )
 
         return lambda_instance(boxes)

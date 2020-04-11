@@ -7,6 +7,11 @@ Adapt the stable [yolov3_tf2](https://github.com/zzh8829/yolov3-tf2) into a mane
 python bin/detect.py  -image "/Users/danielpareja/sandbox/bop-projects/boplabel/data/test/cars/2d66e1c7-cb78-498d-8f40-196a49d6f923.png"
 ```
 
+```bash
+python bin/convert.py -input checkpoints/2020.04.10/yolov3.tf --output-format model
+```
+
+
 ## Format Cleanup
 ```bash
 docker run -v $(pwd):/code mercutiodesign/docker-black black .
