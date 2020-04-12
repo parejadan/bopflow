@@ -191,60 +191,16 @@ def yolo_loss(anchors, num_classes=80, ignore_thresh=0.5):
     return _yolo_loss
 
 
-class BaseV3Net:
-    def __init__(
-        self,
-        channels: int,
-        num_classes: int,
-        class_names: [],
-        size=None,
-        training=False,
-    ):
-        self.channels = channels if channels else 3
-        self.num_classes = num_classes if num_classes else 80
-        self.class_names = class_names
-        self.size = size
-        self.training = training
+class BaseNet:
+    def __init__(self, class_names):
         self.model = None
+        self.class_names = class_names
 
-    def get_input(self):
-        return Input([self.size, self.size, self.channels], name="input")
+    def load_saved_model(self, saved_model: str):
+        loaded = tf.saved_model.load(saved_model)
+        self.model = loaded.signatures["serving_default"]
 
-    def get_conv(self, x: tf.Tensor, x_prev: tf.Tensor, filters: int, mask_index: int):
-        x_ins = (x, x_prev) if isinstance(x_prev, tf.Tensor) else x
-        x = self._conv_creator(filters=filters, name=f"yolo_conv_{mask_index}")(x_ins)
-        output_layer = yolo_output(
-            filters=filters,
-            anchors=len(self.masks[mask_index]),
-            num_classes=self.num_classes,
-            name=f"yolo_output_{mask_index}",
-        )(x)
-
-        return x, output_layer
-
-    def get_lambda_boxes(self, output_layer, mask_index: int):
-        lambda_instance = boxes_lambda(
-            box_func=yolo_boxes,
-            anchors=self.anchors[self.masks[mask_index]],
-            num_classes=self.num_classes,
-            lambda_name=f"yolo_boxes_{mask_index}",
-        )
-
-        return lambda_instance(output_layer)
-
-    def get_output(self, boxes: tuple):
-        lambda_instance = nms_lambda(
-            nms_func=yolo_nms,
-            anchors=self.anchors,
-            masks=self.masks,
-            num_classes=self.num_classes,
-            lambda_name="yolo_nms",
-        )
-
-        return lambda_instance(boxes)
-
-    def load_weights(self, weights_path):
-        return self.model.load_weights(weights_path)
+        return self.model
 
     def evaluate(self, image):
         """
@@ -283,7 +239,64 @@ class BaseV3Net:
         return detections
 
 
-class YOLOTinyNetwork(BaseV3Net):
+class BaseYOLOV3Net(BaseNet):
+    def __init__(
+        self,
+        channels: int,
+        num_classes: int,
+        class_names: [],
+        size=None,
+        training=False,
+    ):
+        super().__init__(class_names=class_names)
+        self.channels = channels if channels else 3
+        self.num_classes = num_classes if num_classes else 80
+        self.size = size
+        self.training = training
+
+    def get_input(self):
+        return Input([self.size, self.size, self.channels], name="input")
+
+    def get_conv(self, x: tf.Tensor, x_prev: tf.Tensor, filters: int, mask_index: int):
+        x_ins = (x, x_prev) if isinstance(x_prev, tf.Tensor) else x
+        conv_tensor = self._conv_creator(
+            filters=filters, name=f"yolo_conv_{mask_index}"
+        )(x_ins)
+        output_layer = yolo_output(
+            filters=filters,
+            anchors=len(self.masks[mask_index]),
+            num_classes=self.num_classes,
+            name=f"yolo_output_{mask_index}",
+        )(conv_tensor)
+
+        return conv_tensor, output_layer
+
+    def get_lambda_boxes(self, output_layer, mask_index: int):
+        lambda_instance = boxes_lambda(
+            box_func=yolo_boxes,
+            anchors=self.anchors[self.masks[mask_index]],
+            num_classes=self.num_classes,
+            lambda_name=f"yolo_boxes_{mask_index}",
+        )
+
+        return lambda_instance(output_layer)
+
+    def get_output(self, boxes: tuple):
+        lambda_instance = nms_lambda(
+            nms_func=yolo_nms,
+            anchors=self.anchors,
+            masks=self.masks,
+            num_classes=self.num_classes,
+            lambda_name="yolo_nms",
+        )
+
+        return lambda_instance(boxes)
+
+    def load_weights(self, weights_path):
+        return self.model.load_weights(weights_path)
+
+
+class YOLOTinyNetwork(BaseYOLOV3Net):
     def __init__(
         self,
         channels: int,
@@ -321,11 +334,15 @@ class YOLOTinyNetwork(BaseV3Net):
     def set_model(self):
         x = inputs = self.get_input()
 
-        x_8, x = darknet_tiny(name="yolo_darknet")(x)
+        x_8, dark_tensor = darknet_tiny(name="yolo_darknet")(x)
 
-        x, output_0 = self.get_conv(x=x, x_prev=None, filters=256, mask_index=0)
+        conv_0, output_0 = self.get_conv(
+            x=dark_tensor, x_prev=None, filters=256, mask_index=0
+        )
 
-        x, output_1 = self.get_conv(x=x, x_prev=x_8, filters=128, mask_index=1)
+        conv_1, output_1 = self.get_conv(
+            x=conv_0, x_prev=x_8, filters=128, mask_index=1
+        )
 
         if self.training:
             self.model = Model(inputs, (output_0, output_1), name="yolov3")
@@ -338,7 +355,7 @@ class YOLOTinyNetwork(BaseV3Net):
         return self.model
 
 
-class YOLONetwork(BaseV3Net):
+class YOLONetwork(BaseYOLOV3Net):
     def __init__(
         self,
         channels: int,
@@ -386,11 +403,17 @@ class YOLONetwork(BaseV3Net):
     def set_model(self):
         x = inputs = self.get_input()
 
-        x_36, x_61, x = darknet(name="yolo_darknet")(x)
+        x_36, x_61, dark_tensor = darknet(name="yolo_darknet")(x)
 
-        x, output_0 = self.get_conv(x=x, x_prev=None, filters=512, mask_index=0)
-        x, output_1 = self.get_conv(x=x, x_prev=x_61, filters=256, mask_index=1)
-        x, output_2 = self.get_conv(x=x, x_prev=x_36, filters=128, mask_index=2)
+        conv_0, output_0 = self.get_conv(
+            x=dark_tensor, x_prev=None, filters=512, mask_index=0
+        )
+        conv_1, output_1 = self.get_conv(
+            x=conv_0, x_prev=x_61, filters=256, mask_index=1
+        )
+        conv_2, output_2 = self.get_conv(
+            x=conv_1, x_prev=x_36, filters=128, mask_index=2
+        )
 
         if self.training:
             self.model = Model(inputs, (output_0, output_1, output_2), name="yolov3")

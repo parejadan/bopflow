@@ -1,5 +1,6 @@
 import numpy as np
 import argparse
+import tensorflow as tf
 
 from bopflow.models.yolonet import yolo_v3
 from bopflow.detect import coco_yolo_detector
@@ -28,7 +29,10 @@ def export_model(weights_path, use_tiny, output_path):
     LOGGER.info("tf weights model loaded")
     yolo.model.summary()
     LOGGER.info("saving model")
-    yolo.model.save(f"{output_path}/1")
+    tf.keras.models.save_model(
+        model=yolo.model,
+        filepath=f"{output_path}/1",
+    )
 
 
 def main(args):

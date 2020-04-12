@@ -1,4 +1,4 @@
-from bopflow.models.yolonet import yolo_v3
+from bopflow.models.yolonet import yolo_v3, BaseNet
 from bopflow.const import COCO_DEFAULT_CLASSES
 
 
@@ -24,3 +24,12 @@ def coco_yolo_detector(weights_path: str, use_tiny=False):
         class_names=COCO_DEFAULT_CLASSES,
         use_tiny=use_tiny,
     )
+
+
+def coco_yolo_model(saved_model: str):
+    # TODO - fix batchnormalizer serialization with mode.save
+    # N10tensorflow3VarE does not exist
+    detector = BaseNet(class_names=COCO_DEFAULT_CLASSES)
+    detector.load_saved_model(saved_model)
+
+    return detector
