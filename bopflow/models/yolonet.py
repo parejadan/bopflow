@@ -11,8 +11,8 @@ from bopflow.models.darknet import (
     darknet_tiny,
 )
 from bopflow.models.utils import (
-    DetectionOutput,
-    DetectionLabel,
+    DOutput,
+    DLabel,
     reshape_lambda,
     reduce_max_lambda,
     boxes_lambda,
@@ -206,15 +206,14 @@ class BaseNet:
         """
         Returns
         -------
-        {
-            "class_id": int,  # class id that was associated to detection class
-            "bounding_box": np.array([  # normalized float coordinates indicating location in image where detected class is visible
-                np.float,
-                np.float,
-                np.float,
-                np.float]),
-            "detection_confidence": float,  # detection confidence score in (0.5, 1.0)
-        }
+        [
+            DOutput(
+                box=BBox(),
+                confidence_score: float,  # detection confidence score in (0.5, 1.0)
+                label=DLabel(),
+            ),
+            ...
+        ]
         """
         detections = []
         boxes, scores, class_ids, detection_count = self.model(image)
@@ -225,10 +224,10 @@ class BaseNet:
         for i in range(detection_count):
             class_number = int(class_ids[i].numpy())
             detections.append(
-                DetectionOutput(
+                DOutput(
                     box=boxes[i].numpy(),
                     score=scores[i].numpy(),
-                    label=DetectionLabel(
+                    label=DLabel(
                         number=class_number,
                         name=self.class_names[class_number]
                         if self.class_names

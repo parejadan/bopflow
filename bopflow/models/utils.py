@@ -94,7 +94,7 @@ class BBox:
         return self.x2y2[1]
 
 
-class DetectionLabel:
+class DLabel:
     def __init__(self, number: int, name: str):
         self.number = number
         self.name = name
@@ -104,8 +104,8 @@ class DetectionLabel:
         return {"number": self.number, "name": self.name}
 
 
-class DetectionOutput:
-    def __init__(self, box: np.array, score: np.float32, label: DetectionLabel):
+class DOutput:
+    def __init__(self, box: np.array, score: np.float32, label: DLabel):
         self.box = BBox(x1y1=box[0:2], x2y2=box[2:4])
         self.confidence_score = score
         self.label = label

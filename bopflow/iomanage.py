@@ -2,7 +2,6 @@ import numpy as np
 import tensorflow as tf
 
 from bopflow.const import DEFAULT_IMAGE_SIZE
-from bopflow.models.utils import DetectionOutput
 
 
 YOLOV3_LAYER_LIST = [
@@ -26,7 +25,6 @@ YOLOV3_TINY_LAYER_LIST = [
 
 def load_darknet_weights(model, weights_file, tiny=False):
     wf = open(weights_file, "rb")
-    major, minor, revision, seen, _ = np.fromfile(wf, dtype=np.int32, count=5)
 
     if tiny:
         layers = YOLOV3_TINY_LAYER_LIST
