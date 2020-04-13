@@ -1,0 +1,6 @@
+checkpoints/
+*.egg*
+.vscode
+.venv
+*.png
+README.md
