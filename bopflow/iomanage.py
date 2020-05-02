@@ -1,26 +1,8 @@
 import numpy as np
 import tensorflow as tf
 
-from bopflow.const import DEFAULT_IMAGE_SIZE
-
-
-YOLOV3_LAYER_LIST = [
-    "yolo_darknet",
-    "yolo_conv_0",
-    "yolo_output_0",
-    "yolo_conv_1",
-    "yolo_output_1",
-    "yolo_conv_2",
-    "yolo_output_2",
-]
-
-YOLOV3_TINY_LAYER_LIST = [
-    "yolo_darknet",
-    "yolo_conv_0",
-    "yolo_output_0",
-    "yolo_conv_1",
-    "yolo_output_1",
-]
+from bopflow.const import DEFAULT_IMAGE_SIZE, YOLOV3_LAYER_LIST, YOLOV3_TINY_LAYER_LIST
+from bopflow.transform.records import parse_tfrecord
 
 
 def load_darknet_weights(model, weights_file, tiny=False):

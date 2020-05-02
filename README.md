@@ -10,3 +10,13 @@ python bin/detect.py -image "test.jpg" --weights-path ./checkpoints/2020.04.10/y
 ```bash
 python bin/convert.py -input checkpoints/2020.04.10/yolov3.tf --output-format model
 ```
+
+
+
+## TODO
+
+- [ ] verify the TF record cross walks was created correctly
+  - [ ] just make sure you can extract a single image and draw/label it
+- [ ] fix the training code doesn't break
+- [ ] train tfrecord against it
+- [ ] generate testing image

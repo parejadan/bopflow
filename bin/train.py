@@ -10,7 +10,7 @@ from tensorflow.keras.callbacks import (
 
 from bopflow.models.yolonet import yolo_v3, yolo_loss
 from bopflow.iomanage import freeze_all, load_tfrecord_dataset
-from bopflow.transform import load_fake_dataset, transform_images, transform_targets
+from bopflow.transform.image import load_fake_dataset, transform_images, transform_targets
 from bopflow import LOGGER
 
 
