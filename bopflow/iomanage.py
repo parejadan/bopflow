@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 from bopflow.const import DEFAULT_IMAGE_SIZE, YOLOV3_LAYER_LIST, YOLOV3_TINY_LAYER_LIST
-from bopflow.transform.records import parse_tfrecord
+from bopflow.transform.records import tfrecord_row_decode
 
 
 def load_darknet_weights(model, weights_file, tiny=False):
@@ -72,7 +72,7 @@ def load_tfrecord_dataset(file_pattern, class_file: str, size=DEFAULT_IMAGE_SIZE
 
     files = tf.data.Dataset.list_files(file_pattern)
     dataset = files.flat_map(tf.data.TFRecordDataset)
-    return dataset.map(lambda x: parse_tfrecord(x, class_table, size))
+    return dataset.map(lambda x: tfrecord_row_decode(x, class_table, size))
 
 
 def load_random_tfrecord_dataset(file_pattern, class_file):
