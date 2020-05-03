@@ -61,22 +61,16 @@ def freeze_all(model, frozen=True):
             freeze_all(l, frozen)
 
 
-def load_tfrecord_dataset(file_pattern, class_file: str, size=DEFAULT_IMAGE_SIZE):
+def load_tfrecord_dataset(file_pattern, size=DEFAULT_IMAGE_SIZE):
     LINE_NUMBER = -1
-    class_table = tf.lookup.StaticHashTable(
-        tf.lookup.TextFileInitializer(
-            class_file, tf.string, 0, tf.int64, LINE_NUMBER, delimiter="\n"
-        ),
-        -1,
-    )
 
     files = tf.data.Dataset.list_files(file_pattern)
     dataset = files.flat_map(tf.data.TFRecordDataset)
-    return dataset.map(lambda x: tfrecord_row_decode(x, class_table, size))
+    return dataset.map(lambda x: tfrecord_row_decode(x, size))
 
 
-def load_random_tfrecord_dataset(file_pattern, class_file):
-    dataset = load_tfrecord_dataset(file_pattern=file_pattern, class_file=class_file)
+def load_random_tfrecord_dataset(file_pattern):
+    dataset = load_tfrecord_dataset(file_pattern=file_pattern)
     dataset = dataset.shuffle(512)
     img_raw, label = next(iter(dataset.take(1)))
 

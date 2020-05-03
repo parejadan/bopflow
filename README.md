@@ -12,7 +12,7 @@ installation
 pip install .[training]
 ```
 
-building tfrecord dictionary
+building tfrecord record
 ```python
 from bopflow.transform.records import PascalVocDecoder
 
@@ -49,23 +49,26 @@ writter.close()
 ```
 
 
-### TestCommand
-```bash
-python bin/detect.py -image "test.jpg" --weights-path ./checkpoints/2020.04.10/yolov3.tf
-```
-
+### Command List
 ```bash
 python bin/convert.py -input checkpoints/2020.04.10/yolov3.tf --output-format model
 ```
 
 ```bash
-python bin/visualize_dataset.py -tfrecord crosswalks.tfrecord -classes-file classes.names
+python bin/detect.py -image "test.jpg" --weights-path ./checkpoints/2020.04.10/yolov3.tf
 ```
+
+```bash
+# requires bopflow[training] installation
+python bin/visualize_dataset.py -tfrecord crosswalks.tfrecord && open output.png
+```
+![Screen Shot 2020-05-03 at 7 44 13 PM](https://user-images.githubusercontent.com/11270882/80928975-7e217280-8d76-11ea-929b-3a67de40398d.png)
 
 
 ## TODO
-- [ ] verify the TF record cross walks was created correctly
-  - [ ] just make sure you can extract a single image and draw/label it
+- [x] verify the TF record cross walks was created correctly
+  - [x] just make sure you can extract a single image and draw/label it
+- [x] create train + test partition
 - [ ] fix the training code doesn't break
 - [ ] train tfrecord against it
 - [ ] generate testing image

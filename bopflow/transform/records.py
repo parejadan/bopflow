@@ -248,12 +248,11 @@ IMAGE_FEATURE_MAP = {
 }
 
 
-def tfrecord_row_decode(dataset, class_table, size):
+def tfrecord_row_decode(dataset, size):
     x = tf.io.parse_single_example(dataset, IMAGE_FEATURE_MAP)
     x_train = tf.image.decode_jpeg(x[TFRRowLabels.encoded], channels=3)
     x_train = tf.image.resize(x_train, (size, size))
 
-    #class_text = tf.sparse.to_dense(x[TFRRowLabels.label_text], default_value="")
     label_ids = tf.sparse.to_dense(x[TFRRowLabels.label_id])
     label_ids = tf.cast(label_ids, tf.float32)
     y_train = tf.stack(
