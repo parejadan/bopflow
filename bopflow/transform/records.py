@@ -31,7 +31,7 @@ class TFRecordLabels:
     filename = "image/filename"
     source_id = "image/source_id"
     encoded = "image/encoded"
-    file_format = "image/format"
+    file_format = "image/image_format"
     x_min = "image/object/bbox/xmin"
     y_min = "image/object/bbox/ymin"
     x_max = "image/object/bbox/xmax"
@@ -41,35 +41,37 @@ class TFRecordLabels:
 
 
 IMAGE_FEATURE_MAP = {
-    #TFRecordLabels.width: tf.io.FixedLenFeature([], tf.int64),
-    #TFRecordLabels.height: tf.io.FixedLenFeature([], tf.int64),
-    #TFRecordLabels.filename: tf.io.FixedLenFeature([], tf.string),
-    #TFRecordLabels.source_id: tf.io.FixedLenFeature([], tf.string),
+    TFRecordLabels.width: tf.io.FixedLenFeature([], tf.int64),
+    TFRecordLabels.height: tf.io.FixedLenFeature([], tf.int64),
+    TFRecordLabels.filename: tf.io.FixedLenFeature([], tf.string),
+    TFRecordLabels.source_id: tf.io.FixedLenFeature([], tf.string),
     TFRecordLabels.encoded: tf.io.FixedLenFeature([], tf.string),
     TFRecordLabels.file_format: tf.io.FixedLenFeature([], tf.string),
     TFRecordLabels.x_min: tf.io.VarLenFeature(tf.float32),
     TFRecordLabels.y_min: tf.io.VarLenFeature(tf.float32),
     TFRecordLabels.x_max: tf.io.VarLenFeature(tf.float32),
     TFRecordLabels.y_max: tf.io.VarLenFeature(tf.float32),
-    #TFRecordLabels.label_text: tf.io.VarLenFeature(tf.string),
-    #TFRecordLabels.label_id: tf.io.VarLenFeature(tf.int64),
+    TFRecordLabels.label_text: tf.io.VarLenFeature(tf.string),
+    TFRecordLabels.label_id: tf.io.VarLenFeature(tf.int64),
 }
 
 
 def parse_tfrecord(dataset, class_table, size):
-    x = tf.io.parse_single_example(tfrecord, IMAGE_FEATURE_MAP)
+    x = tf.io.parse_single_example(dataset, IMAGE_FEATURE_MAP)
     x_train = tf.image.decode_jpeg(x[TFRecordLabels.encoded], channels=3)
     x_train = tf.image.resize(x_train, (size, size))
 
-    class_text = tf.sparse.to_dense(x[TFRecordLabels.label_text], default_value="")
-    labels = tf.cast(class_table.lookup(class_text), tf.float32)
+    #class_text = tf.sparse.to_dense(x[TFRecordLabels.label_text], default_value="")
+    label_ids = tf.sparse.to_dense(x[TFRecordLabels.label_id])
+    label_ids = tf.cast(label_ids, tf.float32)
     y_train = tf.stack(
         [
             tf.sparse.to_dense(x[TFRecordLabels.x_min]),
             tf.sparse.to_dense(x[TFRecordLabels.y_min]),
             tf.sparse.to_dense(x[TFRecordLabels.x_max]),
             tf.sparse.to_dense(x[TFRecordLabels.y_max]),
-            labels,
+            label_ids,
+            #tf.sparse.to_dense(x[TFRecordLabels.label_text]),
         ],
         axis=1,
     )

@@ -11,6 +11,10 @@ python bin/detect.py -image "test.jpg" --weights-path ./checkpoints/2020.04.10/y
 python bin/convert.py -input checkpoints/2020.04.10/yolov3.tf --output-format model
 ```
 
+```bash
+python bin/visualize_dataset.py -tfrecord crosswalks.tfrecord -classes-file classes.names
+```
+
 
 
 ## TODO
