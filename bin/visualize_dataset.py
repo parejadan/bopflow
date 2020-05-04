@@ -3,7 +3,6 @@ import cv2
 import numpy as np
 
 from bopflow.iomanage import load_random_tfrecord_dataset
-from bopflow.transform.image import transform_images
 from bopflow.training.utils import draw_outputs
 from bopflow.models.utils import DOutput, DLabel
 from bopflow import LOGGER

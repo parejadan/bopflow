@@ -192,15 +192,20 @@ def yolo_loss(anchors, num_classes=80, ignore_thresh=0.5):
 
 
 class BaseNet:
-    def __init__(self, class_names):
+    def __init__(self, labels_mapping: dict):
         self.model = None
-        self.class_names = class_names
+        self.labels_mapping = labels_mapping
 
     def load_saved_model(self, saved_model: str):
         loaded = tf.saved_model.load(saved_model)
         self.model = loaded.signatures["serving_default"]
 
         return self.model
+
+    def get_label_name(self, target_id):
+        for label_name, label_id in self.labels_mapping.items():
+            if label_id == target_id:
+                return label_name
 
     def evaluate(self, image):
         """
@@ -216,22 +221,20 @@ class BaseNet:
         ]
         """
         detections = []
-        boxes, scores, class_ids, detection_count = self.model(image)
+        boxes, scores, label_ids, detection_count = self.model(image)
         boxes = boxes[0]
         scores = scores[0]
-        class_ids = class_ids[0]
+        label_ids = label_ids[0]
         detection_count = detection_count[0].numpy()
         for i in range(detection_count):
-            class_number = int(class_ids[i].numpy())
+            label_id = int(label_ids[i].numpy())
             detections.append(
                 DOutput(
                     box=boxes[i].numpy(),
                     score=scores[i].numpy(),
                     label=DLabel(
-                        number=class_number,
-                        name=self.class_names[class_number]
-                        if self.class_names
-                        else None,
+                        number=label_id,
+                        name=self.get_label_name(target_id=label_id),
                     ),
                 )
             )
@@ -243,11 +246,11 @@ class BaseYOLOV3Net(BaseNet):
         self,
         channels: int,
         num_classes: int,
-        class_names: [],
+        labels_mapping: dict,
         size=None,
         training=False,
     ):
-        super().__init__(class_names=class_names)
+        super().__init__(labels_mapping=labels_mapping)
         self.channels = channels if channels else 3
         self.num_classes = num_classes if num_classes else 80
         self.size = size
@@ -302,7 +305,7 @@ class YOLOTinyNetwork(BaseYOLOV3Net):
         anchors: np.array,
         masks: np.array,
         num_classes: int,
-        class_names: [],
+        labels_mapping: dict,
         size=None,
         training=False,
     ):
@@ -310,7 +313,7 @@ class YOLOTinyNetwork(BaseYOLOV3Net):
             size=size,
             channels=channels,
             num_classes=num_classes,
-            class_names=class_names,
+            labels_mapping=labels_mapping,
             training=training,
         )
         if not anchors:
@@ -361,7 +364,7 @@ class YOLONetwork(BaseYOLOV3Net):
         anchors: np.array,
         masks: np.array,
         num_classes: int,
-        class_names: [],
+        labels_mapping: dict,
         size=None,
         training=False,
     ):
@@ -369,7 +372,7 @@ class YOLONetwork(BaseYOLOV3Net):
             size=size,
             channels=channels,
             num_classes=num_classes,
-            class_names=class_names,
+            labels_mapping=labels_mapping,
             training=training,
         )
         if not anchors:
@@ -432,7 +435,7 @@ def yolo_v3(
     anchors=None,
     masks=None,
     num_classes=80,
-    class_names=None,
+    labels_mapping=None,
     training=False,
     use_tiny=False,
     just_model=True,
@@ -443,7 +446,7 @@ def yolo_v3(
         anchors=anchors,
         masks=masks,
         num_classes=num_classes,
-        class_names=class_names,
+        labels_mapping=labels_mapping,
         size=size,
         training=training,
     )

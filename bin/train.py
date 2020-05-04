@@ -10,103 +10,93 @@ from tensorflow.keras.callbacks import (
 
 from bopflow.models.yolonet import yolo_v3, yolo_loss
 from bopflow.iomanage import freeze_all, load_tfrecord_dataset
-from bopflow.transform.image import load_fake_dataset, transform_images, transform_targets
+from bopflow.transform.image import transform_targets
 from bopflow import LOGGER
 
 
-def main(_argv):
+def load_model_with_ancors(num_classes, use_tiny):
+    network = yolo_v3(
+        training=True,
+        num_classes=num_classes,
+        use_tiny=use_tiny,
+        just_model=False,
+    )
+
+    return network.anchors, network.masks, network.model
+
+
+def load_data(tfrecord_filepath, anchors, anchor_masks, batch_size):
+    dataset = load_tfrecord_dataset(tfrecord_filepath)
+    dataset = dataset.shuffle(buffer_size=512)
+    dataset = dataset.batch(batch_size)
+    dataset = dataset.map(
+        lambda img_raw, labels: (
+            img_raw,
+            transform_targets(labels, anchors, anchor_masks),
+        )
+    )
+
+    return dataset
+
+
+def transfer_darknet_layer(
+    model,
+    transfer_weights_classes,
+    transfer_weights_path,
+    use_tiny
+):
+    model_pretrained = yolo_v3(
+        training=True,
+        num_classes=transfer_weights_classes,
+        use_tiny=use_tiny,
+    )
+    model_pretrained.load_weights(transfer_weights_path)
+    model.get_layer("yolo_darknet").set_weights(
+        model_pretrained.get_layer("yolo_darknet").get_weights()
+    )
+    freeze_all(model.get_layer("yolo_darknet"))
+
+
+def main(args):
     physical_devices = tf.config.experimental.list_physical_devices("GPU")
     if len(physical_devices) > 0:
         tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-    network = yolo_v3(
-        size=FLAGS.size,
-        training=True,
-        num_classes=FLAGS.num_classes,
-        use_tiny=FLAGS.tiny,
-        just_model=False,
-    )
-    anchors = network.anchros
-    anchor_masks = network.masks
-    model = network.get_model()
+    anchors, anchor_masks, model = load_model_with_ancors(
+        num_classes=int(args.weights_num_classes),
+        use_tiny=args.use_tiny)
 
-    train_dataset = load_fake_dataset()
-    if FLAGS.dataset:
-        train_dataset = load_tfrecord_dataset(FLAGS.dataset, FLAGS.classes, FLAGS.size)
-    train_dataset = train_dataset.shuffle(buffer_size=512)
-    train_dataset = train_dataset.batch(FLAGS.batch_size)
-    train_dataset = train_dataset.map(
-        lambda x, y: (
-            transform_images(x, FLAGS.size),
-            transform_targets(y, anchors, anchor_masks, FLAGS.size),
-        )
-    )
+    train_dataset = load_data(
+        tfrecord_filepath=args.tfrecord_train,
+        anchors=anchors,
+        anchor_masks=anchor_masks,
+        batch_size=args.batch_size)
     train_dataset = train_dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 
-    val_dataset = load_fake_dataset()
-    if FLAGS.val_dataset:
-        val_dataset = load_tfrecord_dataset(
-            FLAGS.val_dataset, FLAGS.classes, FLAGS.size
-        )
-    val_dataset = val_dataset.batch(FLAGS.batch_size)
-    val_dataset = val_dataset.map(
-        lambda x, y: (
-            transform_images(x, FLAGS.size),
-            transform_targets(y, anchors, anchor_masks, FLAGS.size),
-        )
-    )
+    val_dataset = load_data(
+        tfrecord_filepath=args.tfrecord_train,
+        anchors=anchors,
+        anchor_masks=anchor_masks,
+        batch_size=args.batch_size)
 
-    # Configure the model for transfer learning
-    if FLAGS.transfer == "none":
-        pass  # Nothing to do
-    elif FLAGS.transfer in ["darknet", "no_output"]:
-        # Darknet transfer is a special case that works
-        # with incompatible number of classes
+    transfer_darknet_layer(
+        model=model,
+        transfer_weights_classes=args.weights_num_classes,
+        transfer_weights_path=args.weights,
+        use_tiny=args.use_tiny)
 
-        # reset top layers
-        network = yolo_v3(
-            size=FLAGS.size,
-            training=True,
-            num_classes=FLAGS.weights_num_classes or FLAGS.num_classes,
-            use_tiny=FLAGS.tiny,
-        )
-        model_pretrained.load_weights(FLAGS.weights)
-
-        if FLAGS.transfer == "darknet":
-            model.get_layer("yolo_darknet").set_weights(
-                model_pretrained.get_layer("yolo_darknet").get_weights()
-            )
-            freeze_all(model.get_layer("yolo_darknet"))
-
-        elif FLAGS.transfer == "no_output":
-            for l in model.layers:
-                if not l.name.startswith("yolo_output"):
-                    l.set_weights(model_pretrained.get_layer(l.name).get_weights())
-                    freeze_all(l)
-
-    else:
-        # All other transfer require matching classes
-        model.load_weights(FLAGS.weights)
-        if FLAGS.transfer == "fine_tune":
-            # freeze darknet and fine tune other layers
-            darknet = model.get_layer("yolo_darknet")
-            freeze_all(darknet)
-        elif FLAGS.transfer == "frozen":
-            # freeze everything
-            freeze_all(model)
-
-    optimizer = tf.keras.optimizers.Adam(lr=FLAGS.learning_rate)
+    optimizer = tf.keras.optimizers.Adam(lr=args.learning_rate)
     loss = [
-        YoloLoss(anchors[mask], num_classes=FLAGS.num_classes) for mask in anchor_masks
+        yolo_loss(anchors[mask], num_classes=args.weights_num_classes) for mask in anchor_masks
     ]
 
-    if FLAGS.mode == "eager_tf":
+    if args.mode == "eager_tf":
         # Eager mode is great for debugging
         # Non eager graph mode is recommended for real training
         avg_loss = tf.keras.metrics.Mean("loss", dtype=tf.float32)
         avg_val_loss = tf.keras.metrics.Mean("val_loss", dtype=tf.float32)
 
-        for epoch in range(1, FLAGS.epochs + 1):
+        for epoch in range(1, args.epochs + 1):
             for batch, (images, labels) in enumerate(train_dataset):
                 with tf.GradientTape() as tape:
                     outputs = model(images, training=True)
@@ -158,7 +148,7 @@ def main(_argv):
             model.save_weights("checkpoints/yolov3_train_{}.tf".format(epoch))
     else:
         model.compile(
-            optimizer=optimizer, loss=loss, run_eagerly=(FLAGS.mode == "eager_fit")
+            optimizer=optimizer, loss=loss, run_eagerly=(args.mode == "eager_fit")
         )
 
         callbacks = [
@@ -172,7 +162,7 @@ def main(_argv):
 
         history = model.fit(
             train_dataset,
-            epochs=FLAGS.epochs,
+            epochs=args.epochs,
             callbacks=callbacks,
             validation_data=val_dataset,
         )
@@ -183,42 +173,28 @@ if __name__ == "__main__":
         description="For fine tuning yolov3 object detection against new object classes"
     )
 
-    parser.add_argument("--dataset", default="", help="path to dataset")
-    parser.add_argument("--val_dataset", default="", help="path to validation dataset")
-    parser.add_argument("--tiny", default=False, help="yolov3 or yolov3-tiny")
-    parser.add_argument(
-        "--weights", default="./checkpoints/yolov3.tf", help="path to weights file"
-    )
-    parser.add_argument(
-        "--classes", default="./data/coco.names", help="path to classes file"
-    )
-    parser.add_argument(
-        "--mode",
+    parser.add_argument("-tfrecord-train", default="", help="path to training dataset")
+    parser.add_argument("-tfrecord-test", default="", help="path to testing dataset")
+    parser.add_argument("--use-tiny", default=False, help="yolov3 or yolov3-tiny")
+    parser.add_argument("--weights", default="./checkpoints/yolov3.tf", help="path to weights file")
+    parser.add_argument("--mode",
         default="fit",
         choices=["fit", "eager_fit", "eager_tf"],
         help="fit: model.fit, "
         "eager_fit: model.fit(run_eagerly=True), "
         "eager_tf: custom GradientTape",
     )
-    parser.add_argument(
-        "--transfer",
-        default="none",
-        choices=["none", "darknet", "no_output", "frozen", "fine_tune"],
-        help="none: Training from scratch, "
-        "darknet: Transfer darknet, "
-        "no_output: Transfer all but output, "
-        "frozen: Transfer and freeze all, "
-        "fine_tune: Transfer all and freeze darknet only",
-    )
-    parser.add_argument("--size", default=416, help="image size")
     parser.add_argument("--epochs", default=2, help="number of epochs")
-    parser.add_argument("--batch_size", default=8, help="batch size")
-    parser.add_argument("--learning_rate", default=1e-3, help="learning rate")
-    parser.add_argument(
-        "--num_classes", default=80, help="number of classes in the model"
-    )
-    parser.add_argument(
-        "--weights_num_classes",
-        default=None,
+    parser.add_argument("--batch-size", default=8, help="batch size")
+    parser.add_argument("--learning-rate", default=1e-3, help="learning rate")
+    parser.add_argument("--weights-num-classes",
+        default=80,
         help="specify num class for `weights` file if different, useful in transfer learning with different number of classes",
     )
+    args = parser.parse_args()
+
+    args.epochs = int(args.epochs)
+    args.batch_size = int(args.batch_size)
+    args.learning_rate = float(args.learning_rate)
+    args.weights_num_classes = int(args.weights_num_classes)
+    main(args)

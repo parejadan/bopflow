@@ -60,9 +60,22 @@ python bin/detect.py -image "test.jpg" --weights-path ./checkpoints/2020.04.10/y
 
 ```bash
 # requires bopflow[training] installation
-python bin/visualize_dataset.py -tfrecord crosswalks.tfrecord && open output.png
+python bin/visualize_dataset.py -tfrecord crosswalks-test.tfrecord && open output.png
 ```
 ![Screen Shot 2020-05-03 at 7 44 13 PM](https://user-images.githubusercontent.com/11270882/80928975-7e217280-8d76-11ea-929b-3a67de40398d.png)
+
+
+```bash
+# for training data
+python bin/train.py \
+ -tfrecord-train crosswalks-train.tfrecord \
+ -tfrecord-test crosswalks-test.tfrecord \
+ --weights ./checkpoints/2020.04.10/yolov3.tf \
+ --mode eager_fit \
+ --epochs 10 \
+ --batch-size 8 \
+ --weights-num-classes 80
+```
 
 
 ## TODO
