@@ -71,10 +71,12 @@ python bin/train.py \
  -tfrecord-train crosswalks-train.tfrecord \
  -tfrecord-test crosswalks-test.tfrecord \
  --weights ./checkpoints/2020.04.10/yolov3.tf \
- --mode eager_fit \
  --epochs 10 \
  --batch-size 8 \
- --weights-num-classes 80
+ --new-model-class-count 81
+
+python bin/detect.py -image "test.jpg" --weights-path ./checkpoints/2020.05.07/yolov3_train_10.tf
+
 ```
 
 

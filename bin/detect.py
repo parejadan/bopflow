@@ -47,6 +47,10 @@ if __name__ == "__main__":
         default="./checkpoints/yolov3.tf",
         help="path to network weights to use for detection",
     )
+    parser.add_argument("--num-classes",
+        default=81,
+        help="number of classes the resulting model should consist of. If you want to transfer 80 classes and add 1 more, pass 81",
+    )
     args = parser.parse_args()
 
     main(args)
