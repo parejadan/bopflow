@@ -96,11 +96,3 @@ YOLOV3_LAYER_LIST = [
     "yolo_conv_2",
     "yolo_output_2",
 ]
-
-YOLOV3_TINY_LAYER_LIST = [
-    "yolo_darknet",
-    "yolo_conv_0",
-    "yolo_output_0",
-    "yolo_conv_1",
-    "yolo_output_1",
-]

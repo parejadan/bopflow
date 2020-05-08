@@ -14,9 +14,9 @@ from bopflow.iomanage import freeze_all, load_tfrecord_dataset
 from bopflow.transform.image import transform_targets
 
 
-def load_model_with_ancors(num_classes, use_tiny):
+def load_model_with_ancors(num_classes):
     network = yolo_v3(
-        training=True, num_classes=num_classes, use_tiny=use_tiny, just_model=False
+        training=True, num_classes=num_classes, just_model=False
     )
 
     return network.anchors, network.masks, network.model
@@ -36,8 +36,8 @@ def load_data(tfrecord_filepath, anchors, anchor_masks, batch_size):
     return dataset
 
 
-def transfer_darknet_layer(model, transfer_weights_path, use_tiny):
-    model_pretrained = yolo_v3(training=True, num_classes=80, use_tiny=use_tiny)
+def transfer_darknet_layer(model, transfer_weights_path):
+    model_pretrained = yolo_v3(training=True, num_classes=80)
     model_pretrained.load_weights(transfer_weights_path)
     model.get_layer("yolo_darknet").set_weights(
         model_pretrained.get_layer("yolo_darknet").get_weights()
@@ -59,7 +59,7 @@ def main(args):
         tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
     anchors, anchor_masks, model = load_model_with_ancors(
-        num_classes=int(args.new_model_class_count), use_tiny=args.use_tiny
+        num_classes=int(args.new_model_class_count)
     )
 
     train_dataset = load_data(
@@ -77,9 +77,7 @@ def main(args):
         batch_size=args.batch_size,
     )
 
-    transfer_darknet_layer(
-        model=model, transfer_weights_path=args.weights, use_tiny=args.use_tiny
-    )
+    transfer_darknet_layer(model=model, transfer_weights_path=args.weights)
 
     optimizer = tf.keras.optimizers.Adam(lr=args.learning_rate)
     loss = [
@@ -113,7 +111,6 @@ if __name__ == "__main__":
 
     parser.add_argument("-tfrecord-train", default="", help="path to training dataset")
     parser.add_argument("-tfrecord-test", default="", help="path to testing dataset")
-    parser.add_argument("--use-tiny", default=False, help="yolov3 or yolov3-tiny")
     parser.add_argument(
         "--weights", default="./checkpoints/yolov3.tf", help="path to weights file"
     )

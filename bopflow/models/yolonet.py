@@ -8,7 +8,6 @@ from bopflow.models.darknet import (
     darknet_conv_upsampling,
     darknet_conv,
     darknet,
-    darknet_tiny,
 )
 from bopflow.models.utils import (
     DOutput,
@@ -40,21 +39,6 @@ def yolo_conv(filters: int, name=None):
         x = darknet_conv(x=x, filters=filters, size=1)
         x = darknet_conv(x=x, filters=filters * 2, size=3)
         x = darknet_conv(x=x, filters=filters, size=1)
-
-        return Model(inputs, x, name=name)(x_in)
-
-    return _yolo_conv
-
-
-def yolo_conv_tiny(filters: int, name=None):
-    def _yolo_conv(x_in):
-        if isinstance(x_in, tuple):
-            x, inputs = darknet_conv_upsampling(
-                x_in=x_in, filters=filters, size=1, up_sampling=2
-            )
-        else:
-            x = inputs = Input(x_in.shape[1:])
-            x = darknet_conv(x=x, filters=filters, size=1)
 
         return Model(inputs, x, name=name)(x_in)
 
@@ -297,65 +281,6 @@ class BaseYOLOV3Net(BaseNet):
         return self.model.load_weights(weights_path)
 
 
-class YOLOTinyNetwork(BaseYOLOV3Net):
-    def __init__(
-        self,
-        channels: int,
-        anchors: np.array,
-        masks: np.array,
-        num_classes: int,
-        labels_mapping: dict,
-        size=None,
-        training=False,
-    ):
-        super().__init__(
-            size=size,
-            channels=channels,
-            num_classes=num_classes,
-            labels_mapping=labels_mapping,
-            training=training,
-        )
-        if not anchors:
-            self.anchors = (
-                np.array(
-                    [(10, 14), (23, 27), (37, 58), (81, 82), (135, 169), (344, 319)],
-                    np.float32,
-                )
-                / DEFAULT_IMAGE_SIZE
-            )
-        else:
-            self.anchors = anchors
-        if not masks:
-            self.masks = np.array([[3, 4, 5], [0, 1, 2]])
-        else:
-            self.masks = masks
-        self._conv_creator = yolo_conv_tiny
-        self.set_model()
-
-    def set_model(self):
-        x = inputs = self.get_input()
-
-        x_8, dark_tensor = darknet_tiny(name="yolo_darknet")(x)
-
-        conv_0, output_0 = self.get_conv(
-            x=dark_tensor, x_prev=None, filters=256, mask_index=0
-        )
-
-        conv_1, output_1 = self.get_conv(
-            x=conv_0, x_prev=x_8, filters=128, mask_index=1
-        )
-
-        if self.training:
-            self.model = Model(inputs, (output_0, output_1), name="yolov3")
-        else:
-            boxes_0 = self.get_lambda_boxes(output_layer=output_0, mask_index=0)
-            boxes_1 = self.get_lambda_boxes(output_layer=output_1, mask_index=1)
-            outputs = self.get_output(boxes=(boxes_0[:3], boxes_1[:3]))
-            self.model = Model(inputs, outputs, name="yolov3_tiny")
-
-        return self.model
-
-
 class YOLONetwork(BaseYOLOV3Net):
     def __init__(
         self,
@@ -436,11 +361,9 @@ def yolo_v3(
     num_classes=80,
     labels_mapping=None,
     training=False,
-    use_tiny=False,
     just_model=True,
 ):
-    yolo_network = YOLOTinyNetwork if use_tiny else YOLONetwork
-    network = yolo_network(
+    network = YOLONetwork(
         channels=channels,
         anchors=anchors,
         masks=masks,

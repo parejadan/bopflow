@@ -1,17 +1,14 @@
 import numpy as np
 import tensorflow as tf
 
-from bopflow.const import DEFAULT_IMAGE_SIZE, YOLOV3_LAYER_LIST, YOLOV3_TINY_LAYER_LIST
+from bopflow.const import DEFAULT_IMAGE_SIZE, YOLOV3_LAYER_LIST
 from bopflow.transform.records import tfrecord_row_decode
 
 
-def load_darknet_weights(model, weights_file, tiny=False):
+def load_darknet_weights(model, weights_file):
     wf = open(weights_file, "rb")
 
-    if tiny:
-        layers = YOLOV3_TINY_LAYER_LIST
-    else:
-        layers = YOLOV3_LAYER_LIST
+    layers = YOLOV3_LAYER_LIST
 
     for layer_name in layers:
         sub_model = model.get_layer(layer_name)

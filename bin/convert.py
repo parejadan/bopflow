@@ -8,12 +8,12 @@ from bopflow.iomanage import load_darknet_weights
 from bopflow import LOGGER
 
 
-def export_tf_weights(num_classes, weights_path, use_tiny, output_path):
-    yolo = yolo_v3(num_classes=num_classes, use_tiny=use_tiny)
+def export_tf_weights(num_classes, weights_path, output_path):
+    yolo = yolo_v3(num_classes=num_classes)
     yolo.summary()
     LOGGER.info("model created")
 
-    load_darknet_weights(yolo, weights_path, use_tiny)
+    load_darknet_weights(yolo, weights_path)
     LOGGER.info("weights loaded")
 
     img = np.random.random((1, 320, 320, 3)).astype(np.float32)
@@ -24,8 +24,8 @@ def export_tf_weights(num_classes, weights_path, use_tiny, output_path):
     LOGGER.info("weights saved")
 
 
-def export_model(weights_path, use_tiny, output_path):
-    yolo = coco_yolo_detector(weights_path=weights_path, use_tiny=use_tiny)
+def export_model(weights_path, output_path):
+    yolo = coco_yolo_detector(weights_path=weights_path)
     LOGGER.info("tf weights model loaded")
     yolo.model.summary()
     LOGGER.info("saving model")
@@ -37,12 +37,11 @@ def main(args):
         export_tf_weights(
             num_classes=args.num_classes,
             weights_path=args.input,
-            use_tiny=args.tiny,
             output_path=args.output_path,
         )
     elif args.output_format == "model":
         export_model(
-            weights_path=args.input, use_tiny=args.tiny, output_path=args.output_path
+            weights_path=args.input, output_path=args.output_path
         )
 
 
@@ -53,11 +52,6 @@ if __name__ == "__main__":
     parser.add_argument("-input", help="path to network weights to convert")
     parser.add_argument(
         "--num_classes", default=80, help="number of classes in the model"
-    )
-    parser.add_argument(
-        "--tiny",
-        action="store_true",
-        help="pass if you want to perform conversion with tiny network",
     )
     parser.add_argument(
         "--output-format",

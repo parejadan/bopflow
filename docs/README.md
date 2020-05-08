@@ -8,7 +8,6 @@ This repo provides a clean implementation of YoloV3 in TensorFlow 2.0 using all 
 
 - [x] TensorFlow 2.0
 - [x] `yolov3` with pre-trained Weights
-- [x] `yolov3-tiny` with pre-trained Weights
 - [x] Inference example
 - [x] Transfer learning example
 - [x] Eager mode training with `tf.GradientTape`
@@ -65,25 +64,14 @@ https://www.nvidia.com/Download/index.aspx
 wget https://pjreddie.com/media/files/yolov3.weights -O data/yolov3.weights
 python convert.py
 
-# yolov3-tiny
-wget https://pjreddie.com/media/files/yolov3-tiny.weights -O data/yolov3-tiny.weights
-python convert.py --weights ./data/yolov3-tiny.weights --output ./checkpoints/yolov3-tiny.tf --tiny
-```
-
 ### Detection
 
 ```bash
 # yolov3
 python detect.py --image ./data/meme.jpg
 
-# yolov3-tiny
-python detect.py --weights ./checkpoints/yolov3-tiny.tf --tiny --image ./data/street.jpg
-
 # webcam
 python detect_video.py --video 0
-
-# video file
-python detect_video.py --video path_to_file.mp4 --weights ./checkpoints/yolov3-tiny.tf --tiny
 
 # video file with output
 python detect_video.py --video path_to_file.mp4 --output ./output.avi
@@ -105,8 +93,6 @@ python train.py --batch_size 8 --dataset ~/Data/voc2012.tfrecord --val_dataset ~
 python train.py --batch_size 8 --dataset ~/Data/voc2012.tfrecord --val_dataset ~/Data/voc2012_val.tfrecord --epochs 100 --mode fit --transfer none
 
 python train.py --batch_size 8 --dataset ~/Data/voc2012.tfrecord --val_dataset ~/Data/voc2012_val.tfrecord --epochs 100 --mode fit --transfer no_output
-
-python train.py --batch_size 8 --dataset ~/Data/voc2012.tfrecord --val_dataset ~/Data/voc2012_val.tfrecord --epochs 10 --mode eager_fit --transfer fine_tune --weights ./checkpoints/yolov3-tiny.tf --tiny
 ```
 
 ### Tensorflow Serving
@@ -136,21 +122,18 @@ Numbers are obtained with rough calculations from `detect_video.py`
 | Detection   | 416x416 | 320x320 | 608x608 |
 |-------------|---------|---------|---------|
 | YoloV3      | 1000ms  | 500ms   | 1546ms  |
-| YoloV3-Tiny | 100ms   | 58ms    | 208ms   |
 
 ### Desktop PC (GTX 970)
 
 | Detection   | 416x416 | 320x320 | 608x608 |
 |-------------|---------|---------|---------|
 | YoloV3      | 74ms    | 57ms    | 129ms   |
-| YoloV3-Tiny | 18ms    | 15ms    | 28ms    |
 
 ### AWS g3.4xlarge (Tesla M60)
 
 | Detection   | 416x416 | 320x320 | 608x608 |
 |-------------|---------|---------|---------|
 | YoloV3      | 66ms    | 50ms    | 123ms   |
-| YoloV3-Tiny | 15ms    | 10ms    | 24ms    |
 
 ### RTX 2070 (credit to @AnaRhisT94)
 
@@ -188,8 +171,7 @@ using exported SavedModel graph is much faster (by 2x). For non real-time usage,
 Extremely useful for debugging purpose, you can set breakpoints anywhere.
 You can compile all the keras fitting functionalities with gradient tape using the
 `run_eagerly` argument in model.compile. From my limited testing, all training methods
-including GradientTape, keras.fit, eager or not yeilds similar performance. But graph
-mode is still preferred since it's a tiny bit more efficient.
+including GradientTape, keras.fit, eager or not yeilds similar performance.
 
 ### @tf.function
 
@@ -258,7 +240,6 @@ Training definitely won't work if the rendered label doesn't look correct
 convert.py:
   --output: path to output
     (default: './checkpoints/yolov3.tf')
-  --[no]tiny: yolov3 or yolov3-tiny
     (default: 'false')
   --weights: path to weights file
     (default: './data/yolov3.weights')
@@ -273,7 +254,6 @@ detect.py:
     (default: './data/girl.png')
   --output: path to output image
     (default: './output.jpg')
-  --[no]tiny: yolov3 or yolov3-tiny
     (default: 'false')
   --weights: path to weights file
     (default: './checkpoints/yolov3.tf')
@@ -290,7 +270,6 @@ detect_video.py:
     (default: None)
   --output_format: codec used in VideoWriter when saving video to file
     (default: 'XVID)
-  --[no]tiny: yolov3 or yolov3-tiny
     (default: 'false')
   --weights: path to weights file
     (default: './checkpoints/yolov3.tf')
@@ -320,7 +299,6 @@ train.py:
   --size: image size
     (default: '416')
     (an integer)
-  --[no]tiny: yolov3 or yolov3-tiny
     (default: 'false')
   --transfer: <none|darknet|no_output|frozen|fine_tune>: none: Training from scratch, darknet: Transfer darknet, no_output: Transfer all but output, frozen: Transfer and freeze all,
     fine_tune: Transfer all and freeze darknet only

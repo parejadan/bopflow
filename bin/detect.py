@@ -10,7 +10,7 @@ from bopflow import LOGGER
 
 
 def main(args):
-    yolo = coco_yolo_detector(weights_path=args.weights_path, use_tiny=args.tiny)
+    yolo = coco_yolo_detector(weights_path=args.weights_path)
     LOGGER.info("detector loaded")
 
     img_raw = load_image_file(args.image)
@@ -34,11 +34,6 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-image", dest="image", help="image file to perform detection on"
-    )
-    parser.add_argument(
-        "--tiny",
-        action="store_true",
-        help="pass if you want to perform detection with tiny network",
     )
     parser.add_argument(
         "--weights-path",

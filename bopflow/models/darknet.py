@@ -5,7 +5,6 @@ from tensorflow.keras.layers import (
     LeakyReLU,
     Add,
     Input,
-    MaxPool2D,
     UpSampling2D,
     Concatenate,
 )
@@ -66,26 +65,6 @@ def darknet(name=None):
     x = darknet_block(x=x, filters=1024, blocks=4)
 
     return tf.keras.Model(inputs, (x_36, x_61, x), name=name)
-
-
-def darknet_conv_max_pool(
-    x, filters: int, size: int, pool_size=2, pool_strides=2, pool_padding="same"
-):
-    x = darknet_conv(x=x, filters=filters, size=size)
-    return MaxPool2D(pool_size=pool_size, strides=pool_strides, padding=pool_padding)(x)
-
-
-def darknet_tiny(name=None):
-    x = inputs = Input([None, None, 3])
-    x = darknet_conv_max_pool(x=x, filters=16, size=3)
-    x = darknet_conv_max_pool(x=x, filters=32, size=3)
-    x = darknet_conv_max_pool(x=x, filters=64, size=3)
-    x = darknet_conv_max_pool(x=x, filters=128, size=3)
-    x = x_8 = darknet_conv_max_pool(x=x, filters=256, size=3)
-    x = darknet_conv_max_pool(x=x, filters=512, size=3, pool_strides=1)
-    x = darknet_conv(x=x, filters=1024, size=3)
-
-    return tf.keras.Model(inputs, (x_8, x), name=name)
 
 
 def darknet_conv_upsampling(x_in: tuple, filters: int, size: int, up_sampling: int):
