@@ -62,8 +62,6 @@ def freeze_all(model, frozen=True):
 
 
 def load_tfrecord_dataset(file_pattern, size=DEFAULT_IMAGE_SIZE):
-    LINE_NUMBER = -1
-
     files = tf.data.Dataset.list_files(file_pattern)
     dataset = files.flat_map(tf.data.TFRecordDataset)
     return dataset.map(lambda x: tfrecord_row_decode(x, size))

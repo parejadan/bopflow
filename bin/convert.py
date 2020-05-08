@@ -17,7 +17,7 @@ def export_tf_weights(num_classes, weights_path, use_tiny, output_path):
     LOGGER.info("weights loaded")
 
     img = np.random.random((1, 320, 320, 3)).astype(np.float32)
-    output = yolo(img)
+    yolo(img)
     LOGGER.info("sanity check passed")
 
     yolo.save_weights(f"{output_path}/weights.tf")

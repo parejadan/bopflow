@@ -16,10 +16,10 @@ def draw_outputs(img, detections: [DOutput]):
             pt1=tuple(x1y1),
             pt2=tuple(x2y2),
             color=box_color,
-            thickness=box_width)
+            thickness=box_width,
+        )
         text = "label: {}| score: {}".format(
-            result.label.number,
-            result.confidence_score,
+            result.label.number, result.confidence_score
         )
         text_coordinates = (x1y1[0] + 5, x2y2[1] - 5)
         img = cv2.putText(

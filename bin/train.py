@@ -1,7 +1,6 @@
 import os
 import argparse
 import tensorflow as tf
-import numpy as np
 import datetime
 from tensorflow.keras.callbacks import (
     ReduceLROnPlateau,
@@ -13,15 +12,11 @@ from tensorflow.keras.callbacks import (
 from bopflow.models.yolonet import yolo_v3, yolo_loss
 from bopflow.iomanage import freeze_all, load_tfrecord_dataset
 from bopflow.transform.image import transform_targets
-from bopflow import LOGGER
 
 
 def load_model_with_ancors(num_classes, use_tiny):
     network = yolo_v3(
-        training=True,
-        num_classes=num_classes,
-        use_tiny=use_tiny,
-        just_model=False,
+        training=True, num_classes=num_classes, use_tiny=use_tiny, just_model=False
     )
 
     return network.anchors, network.masks, network.model
@@ -64,27 +59,32 @@ def main(args):
         tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
     anchors, anchor_masks, model = load_model_with_ancors(
-        num_classes=int(args.new_model_class_count),
-        use_tiny=args.use_tiny)
+        num_classes=int(args.new_model_class_count), use_tiny=args.use_tiny
+    )
 
     train_dataset = load_data(
         tfrecord_filepath=args.tfrecord_train,
         anchors=anchors,
         anchor_masks=anchor_masks,
-        batch_size=args.batch_size)
+        batch_size=args.batch_size,
+    )
     train_dataset = train_dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 
     val_dataset = load_data(
         tfrecord_filepath=args.tfrecord_train,
         anchors=anchors,
         anchor_masks=anchor_masks,
-        batch_size=args.batch_size)
+        batch_size=args.batch_size,
+    )
 
-    transfer_darknet_layer(model=model, transfer_weights_path=args.weights, use_tiny=args.use_tiny)
+    transfer_darknet_layer(
+        model=model, transfer_weights_path=args.weights, use_tiny=args.use_tiny
+    )
 
     optimizer = tf.keras.optimizers.Adam(lr=args.learning_rate)
     loss = [
-        yolo_loss(anchors[mask], num_classes=args.new_model_class_count) for mask in anchor_masks
+        yolo_loss(anchors[mask], num_classes=args.new_model_class_count)
+        for mask in anchor_masks
     ]
 
     model.compile(optimizer=optimizer, loss=loss, run_eagerly=False)
@@ -98,7 +98,7 @@ def main(args):
         TensorBoard(log_dir="logs"),
     ]
 
-    history = model.fit(
+    model.fit(
         train_dataset,
         epochs=args.epochs,
         callbacks=callbacks,
@@ -114,13 +114,16 @@ if __name__ == "__main__":
     parser.add_argument("-tfrecord-train", default="", help="path to training dataset")
     parser.add_argument("-tfrecord-test", default="", help="path to testing dataset")
     parser.add_argument("--use-tiny", default=False, help="yolov3 or yolov3-tiny")
-    parser.add_argument("--weights", default="./checkpoints/yolov3.tf", help="path to weights file")
+    parser.add_argument(
+        "--weights", default="./checkpoints/yolov3.tf", help="path to weights file"
+    )
     parser.add_argument("--epochs", default=2, help="number of epochs")
     parser.add_argument("--batch-size", default=8, help="batch size")
     parser.add_argument("--learning-rate", default=1e-3, help="learning rate")
-    parser.add_argument("--new-model-class-count",
+    parser.add_argument(
+        "--new-model-class-count",
         default=81,
-        help="number of classes the resulting model should consist of. If you want to transfer 80 classes and add 1 more, pass 81",
+        help="class count resulting model should consist of. If adding 1 more, pass 81",
     )
     args = parser.parse_args()
 

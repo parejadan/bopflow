@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Model
-from tensorflow.keras.layers import Input, Lambda
+from tensorflow.keras.layers import Input
 from tensorflow.keras.losses import binary_crossentropy, sparse_categorical_crossentropy
 
 from bopflow.models.darknet import (
@@ -233,8 +233,7 @@ class BaseNet:
                     box=boxes[i].numpy(),
                     score=scores[i].numpy(),
                     label=DLabel(
-                        number=label_id,
-                        name=self.get_label_name(target_id=label_id),
+                        number=label_id, name=self.get_label_name(target_id=label_id)
                     ),
                 )
             )

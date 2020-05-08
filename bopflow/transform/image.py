@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from bopflow.const import YOLO_MAX_BOXES, DEFAULT_IMAGE_SIZE
+from bopflow.const import DEFAULT_IMAGE_SIZE
 
 
 @tf.function

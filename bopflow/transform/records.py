@@ -206,13 +206,9 @@ class PascalVocDecoder:
             TFRRowLabels.label_id: FeatureEncode.int64_list(label_ids),
         }
         """
-        (
-            x_mins,
-            y_mins,
-            x_maxs,
-            y_maxs,
-            label_texts,
-        ) = cls.extract_image_objects(annotation_root)
+        (x_mins, y_mins, x_maxs, y_maxs, label_texts) = cls.extract_image_objects(
+            annotation_root
+        )
         # normalize coordinates under image dimensions so to enable reshaping
         x_mins, x_maxs = np.array(x_mins) / img_width, np.array(x_maxs) / img_width
         y_mins, y_maxs = np.array(y_mins) / img_height, np.array(y_maxs) / img_height
@@ -262,7 +258,6 @@ def tfrecord_row_decode(dataset, size):
             tf.sparse.to_dense(x[TFRRowLabels.x_max]),
             tf.sparse.to_dense(x[TFRRowLabels.y_max]),
             label_ids,
-            #tf.sparse.to_dense(x[TFRRowLabels.label_text]),
         ],
         axis=1,
     )

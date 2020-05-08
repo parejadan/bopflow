@@ -1,6 +1,5 @@
 import argparse
 import cv2
-import numpy as np
 
 from bopflow.iomanage import load_random_tfrecord_dataset
 from bopflow.training.utils import draw_outputs
@@ -13,17 +12,13 @@ def extract_box_and_labels(features):
     for x in features:
         box = x[0:4].numpy()
         label_id = x[4].numpy()
-        #label_text = x[5].numpy()
+        # label_text = x[5].numpy()
         if sum(box) == 0:
             # box coordinates with sum of 0 indicate we've reached
             # the end of defined labels
             break
         detections.append(
-            DOutput(
-                box=box,
-                score=1.0,
-                label=DLabel(number=label_id, name=label_id),
-            )
+            DOutput(box=box, score=1.0, label=DLabel(number=label_id, name=label_id))
         )
 
     return detections
@@ -46,7 +41,7 @@ def main(tfrecord):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Loads random dataset from *.tfrecord and writes to .png file for visualizing annotations"
+        description="Load random row from *.tfrecord and writes to .png to visualizing annotations"
     )
     parser.add_argument("-tfrecord", help="tfrecord file to load dataset from")
     args = parser.parse_args()
