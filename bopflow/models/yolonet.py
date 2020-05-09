@@ -23,6 +23,7 @@ from bopflow.const import (
     YOLO_SCORE_THRESHOLD,
     DEFAULT_IMAGE_SIZE,
 )
+from bopflow import LOGGER
 
 
 def yolo_conv(filters: int, name=None):
@@ -238,46 +239,55 @@ class BaseYOLOV3Net(BaseNet):
         self.num_classes = num_classes if num_classes else 80
         self.size = size
         self.training = training
+        self.layer_names = []
 
     def get_input(self):
-        return Input([self.size, self.size, self.channels], name="input")
+        self.layer_names.append("input")
+        return Input([self.size, self.size, self.channels], name=self.layer_names[-1])
 
     def get_conv(self, x: tf.Tensor, x_prev: tf.Tensor, filters: int, mask_index: int):
         x_ins = (x, x_prev) if isinstance(x_prev, tf.Tensor) else x
+
+        self.layer_names.append(f"yolo_conv_{mask_index}")
         conv_tensor = self._conv_creator(
-            filters=filters, name=f"yolo_conv_{mask_index}"
+            filters=filters, name=self.layer_names[-1]
         )(x_ins)
+
+        self.layer_names.append(f"yolo_output_{mask_index}")
         output_layer = yolo_output(
             filters=filters,
             anchors=len(self.masks[mask_index]),
             num_classes=self.num_classes,
-            name=f"yolo_output_{mask_index}",
+            name=self.layer_names[-1],
         )(conv_tensor)
 
         return conv_tensor, output_layer
 
     def get_lambda_boxes(self, output_layer, mask_index: int):
+        self.layer_names.append(f"yolo_boxes_{mask_index}")
         lambda_instance = boxes_lambda(
             box_func=yolo_boxes,
             anchors=self.anchors[self.masks[mask_index]],
             num_classes=self.num_classes,
-            lambda_name=f"yolo_boxes_{mask_index}",
+            lambda_name=self.layer_names[-1],
         )
 
         return lambda_instance(output_layer)
 
     def get_output(self, boxes: tuple):
+        self.layer_names.append("yolo_nms")
         lambda_instance = nms_lambda(
             nms_func=yolo_nms,
             anchors=self.anchors,
             masks=self.masks,
             num_classes=self.num_classes,
-            lambda_name="yolo_nms",
+            lambda_name=self.layer_names[-1],
         )
 
         return lambda_instance(boxes)
 
     def load_weights(self, weights_path):
+        LOGGER.info(f"Loading weights from {weights_path}")
         return self.model.load_weights(weights_path)
 
 
@@ -329,7 +339,8 @@ class YOLONetwork(BaseYOLOV3Net):
     def set_model(self):
         x = inputs = self.get_input()
 
-        x_36, x_61, dark_tensor = darknet(name="yolo_darknet")(x)
+        self.layer_names.append("yolo_darknet")
+        x_36, x_61, dark_tensor = darknet(name=self.layer_names[-1])(x)
 
         conv_0, output_0 = self.get_conv(
             x=dark_tensor, x_prev=None, filters=512, mask_index=0
