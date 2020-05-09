@@ -40,9 +40,7 @@ def main(args):
             output_path=args.output_path,
         )
     elif args.output_format == "model":
-        export_model(
-            weights_path=args.input, output_path=args.output_path
-        )
+        export_model(weights_path=args.input, output_path=args.output_path)
 
 
 if __name__ == "__main__":

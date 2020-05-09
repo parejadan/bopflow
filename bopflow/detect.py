@@ -4,9 +4,7 @@ from bopflow.const import COCO_DEFAULT_CLASSES
 
 def default_detector(weights_path: str, labels_mapping=dict):
     detector = yolo_v3(
-        num_classes=len(labels_mapping),
-        labels_mapping=labels_mapping,
-        just_model=False,
+        num_classes=len(labels_mapping), labels_mapping=labels_mapping, just_model=False
     )
     detector.load_weights(weights_path).expect_partial()
 

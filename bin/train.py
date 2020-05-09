@@ -56,14 +56,18 @@ def force_fit_weights(source_weights, dest_layer):
     to the expected size in dest_layer at same depth. We then attempt to retransfer to
     dest_layer.
     """
-    LOGGER.warning(f"Reshaping layer [{dest_layer.name}] source weights to fit expected size")
+    LOGGER.warning(
+        f"Reshaping layer [{dest_layer.name}] source weights to fit expected size"
+    )
     target_shapes = [weights.shape for weights in dest_layer.get_weights()]
-    reshape_mismatching_shapes(target_shapes=target_shapes, layer_weights=source_weights)
+    reshape_mismatching_shapes(
+        target_shapes=target_shapes, layer_weights=source_weights
+    )
     LOGGER.debug(f"Attempting to set reshaped weights to layer [{dest_layer.name}]")
     dest_layer.set_weights(source_weights)
 
 
-def transfer_weights(source_layer, dest_layer):
+def transfer_weights(source_layer, dest_layer, freeze_layer):
     """
     Transfers weights from source_layer to destination layer. Force fits
     any mismatching weights from source to dest via weights reshape.
@@ -74,15 +78,19 @@ def transfer_weights(source_layer, dest_layer):
         dest_layer.set_weights(source_weights)
     except ValueError:
         force_fit_weights(source_weights=source_weights, dest_layer=dest_layer)
-    LOGGER.info(f"Transfer success - Freezing layer [{dest_layer.name}]")
-    freeze_all(dest_layer)
+    LOGGER.info("Transfer success")
+    if freeze_layer:
+        LOGGER.info(f"Freezing layer [{dest_layer.name}]")
+        freeze_all(dest_layer)
+    else:
+        LOGGER.info(f"Not freezing layer [{dest_layer.name}]")
 
 
 def transfer_layers(network, transfer_weights_path, trained_class_count=80):
     """
     For the given network we load the pretrained weights onto each layer,
     except for the final layer as that's what will get adjusted.
-    - the laoded layers get freezed to assure their integrity
+    - the loaded layers get freezed to assure their integrity
     """
     LOGGER.info(f"Creating network with {trained_class_count} classes")
     model_pretrained = yolo_v3(training=True, num_classes=trained_class_count)
@@ -91,7 +99,8 @@ def transfer_layers(network, transfer_weights_path, trained_class_count=80):
     for layer_name in network.layer_names[:-1]:
         transfer_weights(
             source_layer=model_pretrained.get_layer(layer_name),
-            dest_layer=network.model.get_layer(layer_name)
+            dest_layer=network.model.get_layer(layer_name),
+            freeze_layer=True,
         )
 
 
@@ -159,7 +168,9 @@ def main(args):
     )
 
     trained_weights_path = f"{output_path}/weights.tf"
-    LOGGER.info(f"Training complete. Saving trained model weights to {trained_weights_path}")
+    LOGGER.info(
+        f"Training complete. Saving trained model weights to {trained_weights_path}"
+    )
     model.save_weights(trained_weights_path)
 
 
@@ -175,7 +186,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--epochs", default=2, help="number of epochs")
     parser.add_argument("--batch-size", default=8, help="batch size")
-    parser.add_argument("--learning-rate", default=1e-3, help="learning rate")
+    parser.add_argument("--learning-rate", default=1e-4, help="learning rate")
     parser.add_argument(
         "--new-model-class-count",
         default=81,

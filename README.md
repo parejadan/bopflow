@@ -3,7 +3,7 @@
 Adapt the [yolov3_tf2](https://github.com/zzh8829/yolov3-tf2) into a manegable dependency
 
 
-## Setup
+## How To
 
 ### Creating TFRecords
 installation
@@ -49,7 +49,7 @@ writter.close()
 ```
 
 
-### Command List
+### bin Commands
 ```bash
 python bin/convert.py -input checkpoints/2020.04.10/yolov3.tf --output-format model
 ```
@@ -80,11 +80,19 @@ python bin/detect.py -image "test.jpg" --weights-path ./checkpoints/2020.05.07/y
 
 ```
 
+### Format Code
+
+```bash
+docker run -v $(pwd):/code mercutiodesign/docker-black black .
+```
+
 
 ## TODO
 - [x] verify the TF record cross walks was created correctly
   - [x] just make sure you can extract a single image and draw/label it
 - [x] create train + test partition
-- [ ] fix the training code doesn't break
-- [ ] train tfrecord against it
-- [ ] generate testing image
+- [x] fix the training code doesn't break
+- [x] train tfrecord against it
+- [x] generate testing image
+- [ ] expand detection class
+- [ ] evaluate accuracy

@@ -84,7 +84,6 @@ COCO_DEFAULT_CLASSES = {
     "teddy bear": 77,
     "hair drier": 78,
     "toothbrush": 79,
-    "crosswalks": 80,
 }
 
 YOLOV3_LAYER_LIST = [

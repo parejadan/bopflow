@@ -8,6 +8,5 @@ with open("requirements/training.txt") as f:
     training_require = f.read().splitlines()
 
 setuptools.setup(
-    install_requires=requirements,
-    extras_require={"training": training_require},
+    install_requires=requirements, extras_require={"training": training_require}
 )
