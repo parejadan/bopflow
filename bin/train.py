@@ -11,97 +11,9 @@ from tensorflow.keras.callbacks import (
 )
 
 from bopflow.models.yolonet import yolo_v3, yolo_loss
-from bopflow.iomanage import freeze_all, load_tfrecord_dataset
-from bopflow.transform.image import transform_targets
+from bopflow.training.transfer import transfer_layers
+from bopflow.iomanage import load_tfrecord_for_training
 from bopflow import LOGGER
-
-
-def load_data(tfrecord_filepath, anchors, anchor_masks, batch_size):
-    LOGGER.info(f"Loading dataset {tfrecord_filepath}")
-    dataset = load_tfrecord_dataset(tfrecord_filepath)
-    dataset = dataset.shuffle(buffer_size=512)
-    dataset = dataset.batch(batch_size)
-    dataset = dataset.map(
-        lambda img_raw, labels: (
-            img_raw,
-            transform_targets(labels, anchors, anchor_masks),
-        )
-    )
-
-    return dataset
-
-
-def reshape_mismatching_shapes(target_shapes, layer_weights):
-    """
-    For a list of target shapes (ordered) we iterate through each depth in layer_weights.
-    At each depth we compare weights.shape against target_shape[depth_dex] check for mismatch.
-    If mismatch exist we reshape the weights at that layer.
-    """
-    layer_depth = len(layer_weights)
-
-    for dex in range(layer_depth):
-        weights = layer_weights[dex]
-        target = target_shapes[dex]
-        if weights.shape != target:
-            LOGGER.info(f"Mismatch found at layer depth {dex}")
-            LOGGER.debug(f"Shape at depth {dex}: {weights.shape}\t| expected: {target}")
-            reshaped = np.resize(weights, target)
-            layer_weights[dex] = reshaped
-
-
-def force_fit_weights(source_weights, dest_layer):
-    """
-    For a given set of layer weights (source_weights) we iterate through it's depth
-    and identify where the mismatch exists. The weights at mismatch depth are reshaped
-    to the expected size in dest_layer at same depth. We then attempt to retransfer to
-    dest_layer.
-    """
-    LOGGER.warning(
-        f"Reshaping layer [{dest_layer.name}] source weights to fit expected size"
-    )
-    target_shapes = [weights.shape for weights in dest_layer.get_weights()]
-    reshape_mismatching_shapes(
-        target_shapes=target_shapes, layer_weights=source_weights
-    )
-    LOGGER.debug(f"Attempting to set reshaped weights to layer [{dest_layer.name}]")
-    dest_layer.set_weights(source_weights)
-
-
-def transfer_weights(source_layer, dest_layer, freeze_layer):
-    """
-    Transfers weights from source_layer to destination layer. Force fits
-    any mismatching weights from source to dest via weights reshape.
-    """
-    LOGGER.debug(f"Transfering weights for layer [{dest_layer.name}]")
-    source_weights = source_layer.get_weights()
-    try:
-        dest_layer.set_weights(source_weights)
-    except ValueError:
-        force_fit_weights(source_weights=source_weights, dest_layer=dest_layer)
-    LOGGER.info("Transfer success")
-    if freeze_layer:
-        LOGGER.info(f"Freezing layer [{dest_layer.name}]")
-        freeze_all(dest_layer)
-    else:
-        LOGGER.info(f"Not freezing layer [{dest_layer.name}]")
-
-
-def transfer_layers(network, transfer_weights_path, trained_class_count=80):
-    """
-    For the given network we load the pretrained weights onto each layer,
-    except for the final layer as that's what will get adjusted.
-    - the loaded layers get freezed to assure their integrity
-    """
-    LOGGER.info(f"Creating network with {trained_class_count} classes")
-    model_pretrained = yolo_v3(training=True, num_classes=trained_class_count)
-    model_pretrained.load_weights(transfer_weights_path)
-    LOGGER.debug(f"Network consists of layers [{network.layer_names}]")
-    for layer_name in network.layer_names[:-1]:
-        transfer_weights(
-            source_layer=model_pretrained.get_layer(layer_name),
-            dest_layer=network.model.get_layer(layer_name),
-            freeze_layer=True,
-        )
 
 
 def get_checkpoint_folder():
@@ -138,16 +50,20 @@ def main(args):
         batch_size=args.batch_size,
     )
 
-    transfer_layers(network=network, transfer_weights_path=args.weights)
+    transfer_layers(
+        network=network,
+        transfer_weights_path=args.weights,
+        transfer_weight_class_count=80,
+    )
+    LOGGER.info("Compiling model")
+    model.compile(optimizer=optimizer, loss=loss, run_eagerly=False)
+
     LOGGER.info(f"Initializing optimizer with learning rate {args.learning_rate}")
     optimizer = tf.keras.optimizers.Adam(lr=args.learning_rate)
     loss = [
         yolo_loss(anchors[mask], num_classes=args.new_model_class_count)
         for mask in anchor_masks
     ]
-
-    LOGGER.info("Compiling model")
-    model.compile(optimizer=optimizer, loss=loss, run_eagerly=False)
 
     LOGGER.info(f"Defining checkpoints for output {output_path}")
     callbacks = [

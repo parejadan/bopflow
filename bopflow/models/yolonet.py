@@ -174,8 +174,8 @@ def yolo_loss(anchors, num_classes=80, ignore_thresh=0.5):
 
 class BaseNet:
     def __init__(self, labels_mapping: dict):
-        self.model = None
         self.labels_mapping = labels_mapping
+        self.model = None
 
     def load_saved_model(self, saved_model: str):
         loaded = tf.saved_model.load(saved_model)
@@ -187,6 +187,7 @@ class BaseNet:
         LOGGER.info(f"Loading weights from {weights_path}")
         return self.model.load_weights(weights_path)
 
+    @property
     def layer_names(self):
         return [layer.name for layer in self.model.layers]
 

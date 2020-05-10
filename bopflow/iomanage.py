@@ -1,8 +1,10 @@
 import numpy as np
 import tensorflow as tf
 
+from bopflow import LOGGER
 from bopflow.const import DEFAULT_IMAGE_SIZE, YOLOV3_LAYER_LIST
 from bopflow.transform.records import tfrecord_row_decode
+from bopflow.transform.image import transform_targets
 
 
 def load_darknet_weights(model, weights_file):
@@ -51,17 +53,25 @@ def load_darknet_weights(model, weights_file):
     wf.close()
 
 
-def freeze_all(model, frozen=True):
-    model.trainable = not frozen
-    if isinstance(model, tf.keras.Model):
-        for l in model.layers:
-            freeze_all(l, frozen)
-
-
 def load_tfrecord_dataset(file_pattern, size=DEFAULT_IMAGE_SIZE):
     files = tf.data.Dataset.list_files(file_pattern)
     dataset = files.flat_map(tf.data.TFRecordDataset)
     return dataset.map(lambda x: tfrecord_row_decode(x, size))
+
+
+def load_tfrecord_for_training(tfrecord_filepath, anchors, anchor_masks, batch_size):
+    LOGGER.info(f"Loading dataset {tfrecord_filepath}")
+    dataset = load_tfrecord_dataset(tfrecord_filepath)
+    dataset = dataset.shuffle(buffer_size=512)
+    dataset = dataset.batch(batch_size)
+    dataset = dataset.map(
+        lambda img_raw, labels: (
+            img_raw,
+            transform_targets(labels, anchors, anchor_masks),
+        )
+    )
+
+    return dataset
 
 
 def load_random_tfrecord_dataset(file_pattern):

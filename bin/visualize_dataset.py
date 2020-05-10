@@ -2,7 +2,7 @@ import argparse
 import cv2
 
 from bopflow.iomanage import load_random_tfrecord_dataset
-from bopflow.training.utils import draw_outputs
+from bopflow.training.visualize import draw_outputs
 from bopflow.models.utils import DOutput, DLabel
 from bopflow import LOGGER
 
