@@ -1,12 +1,24 @@
 ## About
 
-Adaptation of [yolov3_tf2](https://github.com/zzh8829/yolov3-tf2) into a manegable dependency
+> Credit to digesting the yoloV3 CCP implementation into a pure python/TF2 implementation goes to https://github.com/zzh8829/yolov3-tf2
+
+The purpose of this project is to build a low-latency image solver for recaptcha puzzles. Why recaptcha? They're the modern day turing test so why not. The idea to build this was inspired by https://github.com/mikeyy/nonoCAPTCHA that solved puzzles using Audio analysis cloud services. After forking and examining the code, I realized the [image solver wasn't fully developed](https://github.com/parejadan/nonoCAPTCHA/blob/master/nonocaptcha/solver.py#L138).
+
+Currently the image solver does well but hasn't produced significant results to fully beat recaptcha puzzles in the wild.
+
+![Screen-Recording-2020-05-10-at-1](https://user-images.githubusercontent.com/11270882/81506173-7d329880-92c2-11ea-9982-4e694d2bba3c.gif)
+
+
+The browser automation code is not open sourced. Components for that code was based off https://github.com/parejadan/nonoCAPTCHA but that was 6+ months ago. Base weights used to build iterative model are:
+
+```bash
+wget https://pjreddie.com/media/files/yolov3.weights -O data/yolov3.weights
+```
 
 
 ## How To
 
 ### Creating TFRecords
-Training & Debug installation
 ```bash
 # for creating tfrecords and visualizing record data
 pip install .[training]
