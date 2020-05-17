@@ -67,7 +67,7 @@ python bin/convert.py -input checkpoints/2020.04.10/yolov3.tf --output-format mo
 ```
 
 ```bash
-python bin/detect.py -image "test.jpg" --weights-path ./checkpoints/2020.05.09/weights.tf
+python bin/detect.py -image "test.jpg" --weights-path ./checkpoints/2020.04.10/weights.tf
 ```
 
 ```bash

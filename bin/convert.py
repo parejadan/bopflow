@@ -3,7 +3,7 @@ import argparse
 import tensorflow as tf
 
 from bopflow.models.yolonet import yolo_v3
-from bopflow.detect import coco_yolo_detector
+from bopflow.detect import default_detector
 from bopflow.iomanage import load_darknet_weights
 from bopflow import LOGGER
 
@@ -25,7 +25,7 @@ def export_tf_weights(num_classes, weights_path, output_path):
 
 
 def export_model(weights_path, output_path):
-    yolo = coco_yolo_detector(weights_path=weights_path)
+    yolo = default_detector(weights_path=weights_path)
     LOGGER.info("tf weights model loaded")
     yolo.model.summary()
     LOGGER.info("saving model")

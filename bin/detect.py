@@ -2,7 +2,7 @@ import time
 import tensorflow as tf
 import argparse
 
-from bopflow.detect import coco_yolo_detector
+from bopflow.detect import default_detector
 from bopflow.transform.image import transform_images
 from bopflow.const import DEFAULT_IMAGE_SIZE
 from bopflow.iomanage import load_image_file
@@ -10,7 +10,7 @@ from bopflow import LOGGER
 
 
 def main(args):
-    yolo = coco_yolo_detector(weights_path=args.weights_path)
+    yolo = default_detector(weights_path=args.weights_path)
     LOGGER.info("detector loaded")
 
     img_raw = load_image_file(args.image)
