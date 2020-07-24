@@ -3,7 +3,7 @@ import argparse
 import tensorflow as tf
 
 from bopflow.models.yolonet import yolo_v3
-from bopflow.detect import default_detector
+from bopflow.models.yolonet import default_detector
 from bopflow.iomanage import load_darknet_weights
 from bopflow import LOGGER
 

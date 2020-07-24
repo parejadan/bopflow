@@ -2,7 +2,7 @@ import time
 import tensorflow as tf
 import argparse
 
-from bopflow.detect import default_detector
+from bopflow.models.yolonet import default_detector, default_model
 from bopflow.transform.image import transform_images
 from bopflow.const import DEFAULT_IMAGE_SIZE
 from bopflow.iomanage import load_image_file
@@ -10,7 +10,7 @@ from bopflow import LOGGER
 
 
 def main(args):
-    yolo = default_detector(weights_path=args.weights_path)
+    yolo = default_model(saved_model=args.weights_path)
     LOGGER.info("detector loaded")
 
     img_raw = load_image_file(args.image)
@@ -40,11 +40,6 @@ if __name__ == "__main__":
         dest="weights_path",
         default="./checkpoints/yolov3.tf",
         help="path to network weights to use for detection",
-    )
-    parser.add_argument(
-        "--num-classes",
-        default=81,
-        help="class count resulting model should consist of. If adding 1 more, pass 81",
     )
     args = parser.parse_args()
 

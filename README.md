@@ -63,7 +63,7 @@ writter.close()
 
 ### bin Commands
 ```bash
-python bin/convert.py -input checkpoints/2020.04.10/yolov3.tf --output-format model
+python bin/convert.py -input checkpoints/2020.04.10/weights.tf --output-format model
 ```
 
 ```bash
