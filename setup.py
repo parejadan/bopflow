@@ -1,12 +1,7 @@
 import setuptools
 
 
-with open("requirements/base.txt") as f:
-    requirements = f.read().splitlines()
-
-with open("requirements/training.txt") as f:
-    training_require = f.read().splitlines()
-
 setuptools.setup(
-    install_requires=requirements, extras_require={"training": training_require}
+    install_requires=["tensorflow==2.1.0"],
+    extras_require={"training": ["opencv-python==4.1.1.26"]}
 )
