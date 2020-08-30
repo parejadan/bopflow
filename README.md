@@ -1,7 +1,5 @@
 ## About
 
-> Credit to digesting the yoloV3 CCP implementation into a pure python/TF2 implementation goes to https://github.com/zzh8829/yolov3-tf2
-
 The purpose of this project is to build a low-latency image solver for recaptcha puzzles. Why recaptcha? They're the modern day turing test so why not. The idea to build this was inspired by https://github.com/mikeyy/nonoCAPTCHA that solved puzzles using Audio analysis cloud services. After forking and examining the code, I realized the [image solver wasn't fully developed](https://github.com/parejadan/nonoCAPTCHA/blob/master/nonocaptcha/solver.py#L138).
 
 Currently the image solver does well but hasn't produced significant results to fully beat recaptcha puzzles in the wild.
@@ -30,7 +28,6 @@ from bopflow.transform.records import PascalVocDecoder
 
 
 # construct tfrecord
-annotation_tree = self.load_annotation(s3_annotation)
 (
     s3_filepath_key,
     width,
@@ -72,7 +69,7 @@ python bin/detect.py -image "test.jpg" --weights-path ./checkpoints/2020.04.10/w
 
 ```bash
 # requires bopflow[training] installation
-python bin/visualize_dataset.py -tfrecord crosswalks-test.tfrecord && open output.png
+python bin/visualize_dataset.py -tfrecord 2020-10-31.tfrecord && open output.png
 ```
 ![Screen Shot 2020-05-03 at 7 44 13 PM](https://user-images.githubusercontent.com/11270882/80928975-7e217280-8d76-11ea-929b-3a67de40398d.png)
 

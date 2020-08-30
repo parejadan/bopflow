@@ -60,9 +60,9 @@ def darknet_residual(x, filters: int):
 
 
 def darknet_block(x, filters: int, blocks: int):
-    x = darknet_conv(x=x, filters=filters, size=3, strides=2)
     for _ in range(blocks):
         x = darknet_residual(x=x, filters=filters)
+    x = darknet_conv(x=x, filters=filters, size=3, strides=2)
 
     return x
 
