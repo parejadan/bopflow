@@ -2,7 +2,6 @@ import tensorflow as tf
 from tensorflow.keras.layers import (
     ZeroPadding2D,
     Conv2D,
-    LeakyReLU,
     Add,
     Input,
     UpSampling2D,
@@ -13,7 +12,15 @@ from tensorflow.keras.regularizers import l2
 from bopflow.models.batch_norm import BatchNormalization
 
 
-def darknet_conv(x, filters: int, size: int, strides=1, batch_norm=True):
+def darknet_conv(
+    x,
+    filters: int,
+    size: int,
+    strides=1,
+    batch_norm=True,
+    activate=True,
+    activate_type="leaky",
+):
     if strides == 1:
         padding_flag = "same"
     else:  # do top left half-padding
@@ -22,7 +29,7 @@ def darknet_conv(x, filters: int, size: int, strides=1, batch_norm=True):
         x = ZeroPadding2D(padding)(x)
 
     use_bias = not batch_norm
-    x = Conv2D(
+    conv = Conv2D(
         filters=filters,
         kernel_size=size,
         strides=strides,
@@ -32,10 +39,15 @@ def darknet_conv(x, filters: int, size: int, strides=1, batch_norm=True):
     )(x)
 
     if batch_norm:
-        x = BatchNormalization()(x)
-        x = LeakyReLU(alpha=0.1)(x)
+        conv = BatchNormalization()(conv)
 
-    return x
+    if activate:
+        if activate_type == "leaky":
+            conv = tf.nn.leaky_relu(conv, alpha=0.1)
+        elif activate_type == "mish":
+            conv = conv * tf.math.tanh(tf.math.softplus(conv))
+
+    return conv
 
 
 def darknet_residual(x, filters: int):
